@@ -2,6 +2,7 @@ package chess;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 abstract class ReturnPiece {
 	static enum PieceType {WP, WR, WN, WB, WQ, WK, 
@@ -31,6 +32,52 @@ abstract class ReturnPiece {
 		}
 	}
 
+	static int fileToInt(PieceFile file) {
+		switch(file) {
+			case a:
+				return 1;
+			case b:
+				return 2;
+			case c:
+				return 3;
+			case d:
+				return 4;
+			case e:
+				return 5;
+			case f:
+				return 6;
+			case g:
+				return 7;
+			case h:
+				return 8;
+			default:
+				return 1;
+		}
+	}
+
+	static PieceFile intToFile(int x) {
+		switch(x) {
+			case 1:
+				return PieceFile.a;
+			case 2:
+				return PieceFile.b;
+			case 3:
+				return PieceFile.c;
+			case 4:
+				return PieceFile.d;
+			case 5:
+				return PieceFile.e;
+			case 6:
+				return PieceFile.f;
+			case 7:
+				return PieceFile.g;
+			case 8:
+				return PieceFile.h;
+			default:
+				return PieceFile.a;
+		}
+	}
+
 	public String toString() {
 		return ""+pieceFile+pieceRank+":"+pieceType;
 	}
@@ -44,7 +91,7 @@ abstract class ReturnPiece {
 				pieceFile == otherPiece.pieceFile &&
 				pieceRank == otherPiece.pieceRank;
 	}
-
+	abstract HashSet<Square> see(Chess.Player color, HashMap<Square, ReturnPiece> map);
 }
 
 class ReturnPlay {
@@ -59,9 +106,72 @@ class ReturnPlay {
 
 
 class Pawn extends ReturnPiece {
-	boolean start = true;
 	Pawn(PieceType pieceType, PieceFile pieceFile, int pieceRank) {
 		super(pieceType, pieceFile, pieceRank);
+	}
+
+	HashSet<Square> see(Chess.Player color, HashMap<Square, ReturnPiece> squares) {
+		HashSet<Square> moves = new HashSet<Square>();
+		int intFile = ReturnPiece.fileToInt(pieceFile);
+		boolean leftFile = intFile == 1;
+		boolean rightFile = intFile == 8;
+		int x;
+		int y;
+		if (color == Chess.Player.white) {
+			x = 1;
+			y = 2;
+		}
+		else {
+			x = -1;
+			y = 7;
+		}
+		Square aheadSquare = new Square(pieceFile, pieceRank+(x*1));
+		ReturnPiece aheadPiece = squares.get(aheadSquare);
+		if (aheadPiece == null) {
+			moves.add(aheadSquare);
+		}
+		if (pieceRank == y && aheadPiece == null) {
+			Square aheadSquare2 = new Square(pieceFile, pieceRank+(x*2));
+			ReturnPiece aheadPiece2 = squares.get(aheadSquare2);
+			if (aheadPiece2 == null) {
+				moves.add(aheadSquare2);
+			}
+		}
+		if (leftFile) {
+			int diagRank = pieceRank+(x*1);
+			int diagFile = intFile+1;
+			Square diag = new Square(ReturnPiece.intToFile(diagFile), diagRank);
+			ReturnPiece piece = squares.get(diag);
+			if (piece != null && piece.color != color) {
+				moves.add(diag);
+			}
+		}
+		else if (rightFile) {
+			int diagRank = pieceRank+(x*1);
+			int diagFile = intFile-1;
+			Square diag = new Square(ReturnPiece.intToFile(diagFile), diagRank);
+			ReturnPiece piece = squares.get(diag);
+			if (piece != null && piece.color != color) {
+				moves.add(diag);
+			}
+		}
+		else {
+			int diagRank1 = pieceRank+(x*1);
+			int diagFile1 = intFile-1;
+			int diagRank2 = pieceRank+(x*1);
+			int diagFile2 = intFile+1;
+			Square diag1 = new Square(ReturnPiece.intToFile(diagFile1), diagRank1);
+			Square diag2 = new Square(ReturnPiece.intToFile(diagFile2), diagRank2);
+			ReturnPiece piece1 = squares.get(diag1);
+			ReturnPiece piece2 = squares.get(diag2);
+			if (piece1 != null && piece1.color != color) {
+				moves.add(diag1);
+			}
+			if (piece2 != null && piece2.color != color) {
+				moves.add(diag2);
+			}
+		}
+		return moves;
 	}
 }
 
@@ -69,11 +179,17 @@ class Rook extends ReturnPiece {
 	Rook(PieceType pieceType, PieceFile pieceFile, int pieceRank) {
 		super(pieceType, pieceFile, pieceRank);
 	}
+	HashSet<Square> see(Chess.Player color, HashMap<Square, ReturnPiece> squares) {
+		return null;
+	}
 }
 
 class Knight extends ReturnPiece {
 	Knight(PieceType pieceType, PieceFile pieceFile, int pieceRank) {
 		super(pieceType, pieceFile, pieceRank);
+	}
+	HashSet<Square> see(Chess.Player color, HashMap<Square, ReturnPiece> squares) {
+		return null;
 	}
 }
 
@@ -81,17 +197,26 @@ class Bishop extends ReturnPiece {
 	Bishop(PieceType pieceType, PieceFile pieceFile, int pieceRank) {
 		super(pieceType, pieceFile, pieceRank);
 	}
+	HashSet<Square> see(Chess.Player color, HashMap<Square, ReturnPiece> squares) {
+		return null;
+	}
 }
 
 class Queen extends ReturnPiece {
 	Queen(PieceType pieceType, PieceFile pieceFile, int pieceRank) {
 		super(pieceType, pieceFile, pieceRank);
 	}
+	HashSet<Square> see(Chess.Player color, HashMap<Square, ReturnPiece> squares) {
+		return null;
+	}
 }
 
 class King extends ReturnPiece {
 	King(PieceType pieceType, PieceFile pieceFile, int pieceRank) {
 		super(pieceType, pieceFile, pieceRank);
+	}
+	HashSet<Square> see(Chess.Player color, HashMap<Square, ReturnPiece> squares) {
+		return null;
 	}
 }
 
@@ -102,6 +227,10 @@ class Square {
 	Square(ReturnPiece.PieceFile file, int rank) {
 		this.file = file;
 		this.rank = rank;
+	}
+
+	public String toString() {
+		return ""+file+rank;
 	}
 
 	public boolean equals(Object other) {
@@ -160,6 +289,30 @@ public class Chess {
 		ReturnPiece firstPiece = squares.get(firstSquare);
 		
 		if (firstPiece == null || currentPlayer != firstPiece.color) {
+			System.out.println("first illegal");
+			state.message = ReturnPlay.Message.ILLEGAL_MOVE;
+			return state;
+		}
+
+		ReturnPiece.PieceFile secondFile = ReturnPiece.PieceFile.valueOf("" + ret.charAt(3));
+		int secondRank = ret.charAt(4) - '0';
+		Square secondSquare = new Square(secondFile, secondRank);
+		HashSet<Square> possibleMoves = firstPiece.see(currentPlayer, squares);
+		System.out.println(possibleMoves);
+		if (possibleMoves.contains(secondSquare)) {
+			pieces.remove(firstPiece);
+			firstPiece.pieceFile = secondFile;
+			firstPiece.pieceRank = secondRank;
+			pieces.add(firstPiece);
+			squares.remove(firstSquare);
+			ReturnPiece potentialPiece = squares.get(secondSquare);
+			if (potentialPiece != null) {
+				pieces.remove(potentialPiece);
+			}
+			squares.put(secondSquare, firstPiece);
+		}
+		else {
+			System.out.println("second illegal");
 			state.message = ReturnPlay.Message.ILLEGAL_MOVE;
 			return state;
 		}
@@ -174,6 +327,7 @@ public class Chess {
 			default:
 				System.out.println("ERROR: PLAYER NO COLOR");
 		}
+
 		return state;
 	}
 	
