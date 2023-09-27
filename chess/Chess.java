@@ -404,6 +404,11 @@ public class Chess {
 	static ArrayList<ReturnPiece> pieces;
 	static HashMap<Square, ReturnPiece> squares;
 	static Player currentPlayer;
+	static Square enPassant;
+	static boolean whiteCastleShort;
+	static boolean whiteCastleLong;
+	static boolean blackCastleShort;
+	static boolean blackCastleLong;
 
 	/**
 	 * Plays the next move for whichever player has the turn.
