@@ -452,10 +452,8 @@ public class Chess {
 		HashSet<Square> possibleMoves = firstPiece.see(currentPlayer, squares);
 		System.out.println(possibleMoves);
 		if (possibleMoves.contains(secondSquare)) {
-			pieces.remove(firstPiece);
 			firstPiece.pieceFile = secondFile;
 			firstPiece.pieceRank = secondRank;
-			pieces.add(firstPiece);
 			squares.remove(firstSquare);
 			ReturnPiece potentialPiece = squares.get(secondSquare);
 			if (potentialPiece != null) {
@@ -589,4 +587,3 @@ public class Chess {
 		pieces.add(h8);
 	}
 }
-
