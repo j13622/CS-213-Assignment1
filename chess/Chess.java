@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
+
 abstract class ReturnPiece {
 	static enum PieceType {WP, WR, WN, WB, WQ, WK, 
 		            BP, BR, BN, BB, BK, BQ};
@@ -18,6 +19,8 @@ abstract class ReturnPiece {
 		this.pieceType = pieceType;
 		this.pieceFile = pieceFile;
 		this.pieceRank = pieceRank;
+
+		//sets color
 		switch(pieceType) {
 			case WP:
 			case WR:
@@ -32,6 +35,7 @@ abstract class ReturnPiece {
 		}
 	}
 
+	//switch enum PieceFile to int
 	static int fileToInt(PieceFile file) {
 		switch(file) {
 			case a:
@@ -55,6 +59,7 @@ abstract class ReturnPiece {
 		}
 	}
 
+	//switch int to enum PieceFile
 	static PieceFile intToFile(int x) {
 		switch(x) {
 			case 1:
@@ -91,6 +96,8 @@ abstract class ReturnPiece {
 				pieceFile == otherPiece.pieceFile &&
 				pieceRank == otherPiece.pieceRank;
 	}
+
+	//defined in subclasses
 	abstract HashSet<Square> see(Chess.Player color, HashMap<Square, ReturnPiece> map);
 }
 
@@ -106,6 +113,7 @@ class ReturnPlay {
 
 
 class Pawn extends ReturnPiece {
+
 	Pawn(PieceType pieceType, PieceFile pieceFile, int pieceRank) {
 		super(pieceType, pieceFile, pieceRank);
 	}
@@ -176,45 +184,189 @@ class Pawn extends ReturnPiece {
 }
 
 class Rook extends ReturnPiece {
+
 	Rook(PieceType pieceType, PieceFile pieceFile, int pieceRank) {
-		super(pieceType, pieceFile, pieceRank);
+		super(pieceType, pieceFile, pieceRank);		
 	}
+
+	//idea here is to go, say, right from rook and then keep looking right until hit piece or edge of board
 	HashSet<Square> see(Chess.Player color, HashMap<Square, ReturnPiece> squares) {
-		return null;
+		HashSet<Square> moves = new HashSet<Square>();
+		int intFile = ReturnPiece.fileToInt(pieceFile);
+		for (int i = intFile - 1; i >= 1; i--) {
+			Square move = new Square(ReturnPiece.intToFile(i), pieceRank);
+			ReturnPiece piece = squares.get(move);
+			if (piece == null) {
+				moves.add(move);
+			}
+			else if (piece.color != color) {
+				moves.add(move);
+				break;
+			}
+			else {
+				break;
+			}
+		}
+		for(int i = intFile + 1; i <= 8; i++) {
+			Square move = new Square(ReturnPiece.intToFile(i), pieceRank);
+			ReturnPiece piece = squares.get(move);
+			if (piece == null) {
+				moves.add(move);
+			}
+			else if (piece.color != color) {
+				moves.add(move);
+				break;
+			}
+			else {
+				break;
+			}
+		}
+		for(int i = pieceRank - 1; i >= 1; i--) {
+			Square move = new Square(pieceFile, i);
+			ReturnPiece piece = squares.get(move);
+			if (piece == null) {
+				moves.add(move);
+			}
+			else if (piece.color != color) {
+				moves.add(move);
+				break;
+			}
+			else {
+				break;
+			}
+		}
+		for(int i = pieceRank + 1; i <= 8; i++) {
+			Square move = new Square(pieceFile, i);
+			ReturnPiece piece = squares.get(move);
+			if (piece == null) {
+				moves.add(move);
+			}
+			else if (piece.color != color) {
+				moves.add(move);
+				break;
+			}
+			else {
+				break;
+			}
+		}
+		return moves;
 	}
 }
 
 class Knight extends ReturnPiece {
+
 	Knight(PieceType pieceType, PieceFile pieceFile, int pieceRank) {
 		super(pieceType, pieceFile, pieceRank);
 	}
+
+	//knight has 8 possible moves. if either of those is outside of board (> 8 or < 1) then it's off board, not in if statement
+	//if it's not a opposite color piece or empty then it's not added
 	HashSet<Square> see(Chess.Player color, HashMap<Square, ReturnPiece> squares) {
-		return null;
+		HashSet<Square> moves = new HashSet<Square>();
+		int intFile = ReturnPiece.fileToInt(pieceFile);
+		int[][] sqrs = {{intFile - 1, pieceRank - 2}, {intFile - 1, pieceRank + 2}, {intFile - 2, pieceRank - 1}, {intFile - 2, pieceRank + 1},
+		{intFile + 1, pieceRank - 2}, {intFile + 1, pieceRank + 2}, {intFile + 2, pieceRank - 1}, {intFile + 2, pieceRank + 1}};
+		for (int[] i : sqrs) {
+			if (i[0] <= 8 && i[0] >= 1 && i[1] <= 8 && i[1] >= 1) {
+				Square move = new Square(ReturnPiece.intToFile(i[0]), i[1]);
+				ReturnPiece piece = squares.get(move);
+				if (piece == null || piece.color != color) {
+					moves.add(move);
+				}
+			}
+		}
+		return moves;
 	}
 }
 
 class Bishop extends ReturnPiece {
+
 	Bishop(PieceType pieceType, PieceFile pieceFile, int pieceRank) {
 		super(pieceType, pieceFile, pieceRank);
 	}
+
+	//check comment above rook's 'see' function. same principle
 	HashSet<Square> see(Chess.Player color, HashMap<Square, ReturnPiece> squares) {
-		return null;
+		HashSet<Square> moves = new HashSet<Square>();
+		int intFile = ReturnPiece.fileToInt(pieceFile);
+		for(int i = intFile + 1, j = pieceRank + 1; i <= 8 && j <= 8; i++, j++) {
+			Square move = new Square(ReturnPiece.intToFile(i), j);
+			ReturnPiece piece = squares.get(move);
+			if (piece == null) {
+				moves.add(move);
+			}
+			else if (piece.color != color) {
+				moves.add(move);
+				break;
+			}
+			else {
+				break;
+			}
+		}
+		for(int i = intFile + 1, j = pieceRank - 1; i <= 8 && j >= 1; i++, j--) {
+			Square move = new Square(ReturnPiece.intToFile(i), j);
+			ReturnPiece piece = squares.get(move);
+			if (piece == null) {
+				moves.add(move);
+			}
+			else if (piece.color != color) {
+				moves.add(move);
+				break;
+			}
+			else {
+				break;
+			}
+		}
+		for(int i = intFile - 1, j = pieceRank + 1; i >= 1 && j <= 8; i--, j++) {
+			Square move = new Square(ReturnPiece.intToFile(i), j);
+			ReturnPiece piece = squares.get(move);
+			if (piece == null) {
+				moves.add(move);
+			}
+			else if (piece.color != color) {
+				moves.add(move);
+				break;
+			}
+			else {
+				break;
+			}
+		}
+		for(int i = intFile - 1, j = pieceRank - 1; i >= 1 && j >= 1; i--, j--) {
+			Square move = new Square(ReturnPiece.intToFile(i), j);
+			ReturnPiece piece = squares.get(move);
+			if (piece == null) {
+				moves.add(move);
+			}
+			else if (piece.color != color) {
+				moves.add(move);
+				break;
+			}
+			else {
+				break;
+			}
+		}
+		return moves;
 	}
 }
 
 class Queen extends ReturnPiece {
+
 	Queen(PieceType pieceType, PieceFile pieceFile, int pieceRank) {
 		super(pieceType, pieceFile, pieceRank);
 	}
+
 	HashSet<Square> see(Chess.Player color, HashMap<Square, ReturnPiece> squares) {
+		//should be able to just concat the for loops from bishop + rook
 		return null;
 	}
 }
 
 class King extends ReturnPiece {
+
 	King(PieceType pieceType, PieceFile pieceFile, int pieceRank) {
 		super(pieceType, pieceFile, pieceRank);
 	}
+
 	HashSet<Square> see(Chess.Player color, HashMap<Square, ReturnPiece> squares) {
 		return null;
 	}
