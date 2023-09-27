@@ -158,9 +158,11 @@ public class Chess {
 		int firstRank = ret.charAt(1) - '0';
 		Square firstSquare = new Square(firstFile, firstRank);
 		ReturnPiece firstPiece = squares.get(firstSquare);
-		System.out.println(firstPiece);
 		
-		
+		if (firstPiece == null || currentPlayer != firstPiece.color) {
+			state.message = ReturnPlay.Message.ILLEGAL_MOVE;
+			return state;
+		}
 
 		switch(currentPlayer) {
 			case white:
