@@ -357,7 +357,122 @@ class Queen extends ReturnPiece {
 
 	HashSet<Square> see(Chess.Player color, HashMap<Square, ReturnPiece> squares) {
 		//should be able to just concat the for loops from bishop + rook
-		return null;
+		HashSet<Square> moves = new HashSet<Square>();
+		int intFile = ReturnPiece.fileToInt(pieceFile);
+		for (int i = intFile - 1; i >= 1; i--) {
+			Square move = new Square(ReturnPiece.intToFile(i), pieceRank);
+			ReturnPiece piece = squares.get(move);
+			if (piece == null) {
+				moves.add(move);
+			}
+			else if (piece.color != color) {
+				moves.add(move);
+				break;
+			}
+			else {
+				break;
+			}
+		}
+		for(int i = intFile + 1; i <= 8; i++) {
+			Square move = new Square(ReturnPiece.intToFile(i), pieceRank);
+			ReturnPiece piece = squares.get(move);
+			if (piece == null) {
+				moves.add(move);
+			}
+			else if (piece.color != color) {
+				moves.add(move);
+				break;
+			}
+			else {
+				break;
+			}
+		}
+		for(int i = pieceRank - 1; i >= 1; i--) {
+			Square move = new Square(pieceFile, i);
+			ReturnPiece piece = squares.get(move);
+			if (piece == null) {
+				moves.add(move);
+			}
+			else if (piece.color != color) {
+				moves.add(move);
+				break;
+			}
+			else {
+				break;
+			}
+		}
+		for(int i = pieceRank + 1; i <= 8; i++) {
+			Square move = new Square(pieceFile, i);
+			ReturnPiece piece = squares.get(move);
+			if (piece == null) {
+				moves.add(move);
+			}
+			else if (piece.color != color) {
+				moves.add(move);
+				break;
+			}
+			else {
+				break;
+			}
+		}
+		for(int i = intFile + 1, j = pieceRank + 1; i <= 8 && j <= 8; i++, j++) {
+			Square move = new Square(ReturnPiece.intToFile(i), j);
+			ReturnPiece piece = squares.get(move);
+			if (piece == null) {
+				moves.add(move);
+			}
+			else if (piece.color != color) {
+				moves.add(move);
+				break;
+			}
+			else {
+				break;
+			}
+		}
+		for(int i = intFile + 1, j = pieceRank - 1; i <= 8 && j >= 1; i++, j--) {
+			Square move = new Square(ReturnPiece.intToFile(i), j);
+			ReturnPiece piece = squares.get(move);
+			if (piece == null) {
+				moves.add(move);
+			}
+			else if (piece.color != color) {
+				moves.add(move);
+				break;
+			}
+			else {
+				break;
+			}
+		}
+		for(int i = intFile - 1, j = pieceRank + 1; i >= 1 && j <= 8; i--, j++) {
+			Square move = new Square(ReturnPiece.intToFile(i), j);
+			ReturnPiece piece = squares.get(move);
+			if (piece == null) {
+				moves.add(move);
+			}
+			else if (piece.color != color) {
+				moves.add(move);
+				break;
+			}
+			else {
+				break;
+			}
+		}
+		for(int i = intFile - 1, j = pieceRank - 1; i >= 1 && j >= 1; i--, j--) {
+			Square move = new Square(ReturnPiece.intToFile(i), j);
+			ReturnPiece piece = squares.get(move);
+			if (piece == null) {
+				moves.add(move);
+			}
+			else if (piece.color != color) {
+				moves.add(move);
+				break;
+			}
+			else {
+				break;
+			}
+		}
+
+		return moves;
 	}
 }
 
@@ -439,6 +554,12 @@ public class Chess {
         } else {
             ret = move.substring(first, first+5);
         }
+		int moveSubstringLength = ret.length(); //used later for promotion
+
+		//reset
+		if(ret == "reset"){
+			
+		}
 
 		ReturnPiece.PieceFile firstFile = ReturnPiece.PieceFile.valueOf("" + ret.charAt(0));
 		int firstRank = ret.charAt(1) - '0';
@@ -463,6 +584,45 @@ public class Chess {
 			ReturnPiece potentialPiece = squares.get(secondSquare);
 			if (potentialPiece != null) {
 				pieces.remove(potentialPiece);
+			}
+			//2 if statements below handle promotion
+			if (secondRank == 8 && firstPiece.pieceType == ReturnPiece.PieceType.WP){
+				switch(ret.charAt(moveSubstringLength-1)){
+					case 'N':
+						firstPiece.pieceType = ReturnPiece.PieceType.WN;
+						squares.put(secondSquare, firstPiece);
+						break;
+					case 'B':
+						firstPiece.pieceType = ReturnPiece.PieceType.WB;
+						squares.put(secondSquare, firstPiece);
+						break;
+					case 'R':
+						firstPiece.pieceType = ReturnPiece.PieceType.WR;
+						squares.put(secondSquare, firstPiece);
+						break;
+					default:
+						firstPiece.pieceType = ReturnPiece.PieceType.WQ;
+						squares.put(secondSquare, firstPiece);
+				} 
+				
+			}
+			if (secondRank == 1 && firstPiece.pieceType == ReturnPiece.PieceType.BP){
+				switch(ret.charAt(moveSubstringLength-1)){
+					case 'N':
+						firstPiece.pieceType = ReturnPiece.PieceType.BN;
+						squares.put(secondSquare, firstPiece);
+						break;
+					case 'B':
+						firstPiece.pieceType = ReturnPiece.PieceType.BB;
+						squares.put(secondSquare, firstPiece);
+						break;
+					case 'R':
+						firstPiece.pieceType = ReturnPiece.PieceType.BR;
+						break;
+					default:
+						firstPiece.pieceType = ReturnPiece.PieceType.BQ;
+						squares.put(secondSquare, firstPiece);
+				} 
 			}
 			squares.put(secondSquare, firstPiece);
 		}
