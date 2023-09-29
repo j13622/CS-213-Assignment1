@@ -100,6 +100,7 @@ public class Chess {
 		int secondRank = ret.charAt(4) - '0';
 		Square secondSquare = new Square(secondFile, secondRank);
 		HashSet<Square> possibleMoves = firstPiece.see();
+
 		System.out.println(possibleMoves);
 		if (possibleMoves.contains(secondSquare)) {
 			firstPiece.pieceFile = secondFile;
@@ -109,38 +110,7 @@ public class Chess {
 			if (potentialPiece != null) {
 				pieces.remove(potentialPiece);
 			}
-			//2 if statements below handle promotion
-			if (secondRank == 8 && firstPiece.pieceType == ReturnPiece.PieceType.WP){
-				switch(ret.charAt(moveSubstringLength-1)){
-					case 'N':
-						firstPiece.pieceType = ReturnPiece.PieceType.WN;
-						break;
-					case 'B':
-						firstPiece.pieceType = ReturnPiece.PieceType.WB;
-						break;
-					case 'R':
-						firstPiece.pieceType = ReturnPiece.PieceType.WR;
-						break;
-					default:
-						firstPiece.pieceType = ReturnPiece.PieceType.WQ;
-				} 
-				
-			}
-			if (secondRank == 1 && firstPiece.pieceType == ReturnPiece.PieceType.BP){
-				switch(ret.charAt(moveSubstringLength-1)){
-					case 'N':
-						firstPiece.pieceType = ReturnPiece.PieceType.BN;
-						break;
-					case 'B':
-						firstPiece.pieceType = ReturnPiece.PieceType.BB;
-						break;
-					case 'R':
-						firstPiece.pieceType = ReturnPiece.PieceType.BR;
-						break;
-					default:
-						firstPiece.pieceType = ReturnPiece.PieceType.BQ;
-				} 
-			}
+
 			squares.put(secondSquare, firstPiece);
 		}
 		else {
@@ -148,6 +118,60 @@ public class Chess {
 			state.message = ReturnPlay.Message.ILLEGAL_MOVE;
 			return state;
 		}
+
+		//2 if statements below handle promotion
+			if (secondRank == 8 && firstPiece.pieceType == ReturnPiece.PieceType.WP){
+				pieces.remove(firstPiece);
+				squares.remove(firstSquare);
+				squares.remove(secondSquare);
+				switch(ret.charAt(moveSubstringLength-1)){
+					case 'N':
+						FullPiece promKnight = new Knight(ReturnPiece.PieceType.WN, secondFile, secondRank);
+						squares.put(new Square(secondFile, secondRank), promKnight);
+						pieces.add(promKnight);
+						break;
+					case 'B':
+						FullPiece promBishop = new Bishop(ReturnPiece.PieceType.WB, secondFile, secondRank);
+						squares.put(new Square(secondFile, secondRank), promBishop);
+						pieces.add(promBishop);
+						break;
+					case 'R':
+						FullPiece promRook = new Rook(ReturnPiece.PieceType.WR, secondFile, secondRank);
+						squares.put(new Square(secondFile, secondRank), promRook);
+						pieces.add(promRook);
+						break;
+					default:
+						FullPiece promQueen = new Queen(ReturnPiece.PieceType.WQ, secondFile, secondRank);
+						squares.put(new Square(secondFile, secondRank), promQueen);
+						pieces.add(promQueen);
+				}
+			}
+			if (secondRank == 1 && firstPiece.pieceType == ReturnPiece.PieceType.BP){
+				pieces.remove(firstPiece);
+				squares.remove(firstSquare);
+				squares.remove(secondSquare);
+				switch(ret.charAt(moveSubstringLength-1)){
+					case 'N':
+						FullPiece promKnight = new Knight(ReturnPiece.PieceType.BN, secondFile, secondRank);
+						squares.put(new Square(secondFile, secondRank), promKnight);
+						pieces.add(promKnight);
+						break;
+					case 'B':
+						FullPiece promBishop = new Bishop(ReturnPiece.PieceType.BB, secondFile, secondRank);
+						squares.put(new Square(secondFile, secondRank), promBishop);
+						pieces.add(promBishop);
+						break;
+					case 'R':
+						FullPiece promRook = new Rook(ReturnPiece.PieceType.BR, secondFile, secondRank);
+						squares.put(new Square(secondFile, secondRank), promRook);
+						pieces.add(promRook);
+						break;
+					default:
+						FullPiece promQueen = new Queen(ReturnPiece.PieceType.BQ, secondFile, secondRank);
+						squares.put(new Square(secondFile, secondRank), promQueen);
+						pieces.add(promQueen);
+				} 
+			}
 
 		switch(currentPlayer) {
 			case white:
@@ -357,6 +381,7 @@ class Pawn extends FullPiece {
 			y = 7;
 		}
 		Square aheadSquare = new Square(pieceFile, pieceRank+(x*1));
+
 		FullPiece aheadPiece = Chess.squares.get(aheadSquare);
 		if (aheadPiece == null) {
 			moves.add(aheadSquare);
@@ -706,7 +731,20 @@ class King extends FullPiece {
 	}
 
 	HashSet<Square> see() {
-		return null;
+		HashSet<Square> moves = new HashSet<Square>();
+		int intFile = FullPiece.fileToInt(pieceFile);
+		int[][] sqrs = {{intFile + 1, pieceRank + 1}, {intFile + 1, pieceRank}, {intFile + 1, pieceRank - 1}, {intFile, pieceRank + 1},
+		{intFile, pieceRank - 1}, {intFile - 1, pieceRank + 1}, {intFile - 1, pieceRank}, {intFile - 1, pieceRank - 1}};
+		for (int[] i : sqrs) {
+			if (i[0] <= 8 && i[0] >= 1 && i[1] <= 8 && i[1] >= 1) {
+				Square move = new Square(FullPiece.intToFile(i[0]), i[1]);
+				FullPiece piece = Chess.squares.get(move);
+				if (piece == null || piece.color != color) {
+					moves.add(move);
+				}
+			}
+		}
+		return moves;
 	}
 }
 
