@@ -102,6 +102,45 @@ public class Chess {
 		return false;
 	}
 
+	public static boolean checkmate(Square opponentKingSquare, Player opponent){
+        //create an arraylist of arraylists, where each row is a legal move, and the entries in each row hold args to be fed into move function
+        boolean legalMoveOutOfCheck = false;
+		ArrayList<ArrayList<Object>> allLegalMoves = new ArrayList<ArrayList<Object>>();
+        for (FullPiece opponentPiece : pieces){
+            if (opponentPiece.color == opponent){
+                HashSet<Square> currentOpponentPieceSees = new HashSet<Square>();
+				currentOpponentPieceSees = opponentPiece.see();
+                for (Square move : currentOpponentPieceSees){
+                    ArrayList<Object> legalMove = new ArrayList<Object>();
+                    legalMove.add(opponentPiece);
+                    legalMove.add(move);
+                    allLegalMoves.add(legalMove);
+                }
+            }
+        }
+        //for all legal moves, call the move function, determine if legal, undo move; if king is moved, check that square instead
+        for (ArrayList<Object> move : allLegalMoves){
+            Object[][] undoData = moveFctn((FullPiece)move.get(0), (Square)move.get(1));
+			ReturnPiece piece = (ReturnPiece)move.get(0);
+			if (piece.pieceType == ReturnPiece.PieceType.WK || piece.pieceType == ReturnPiece.PieceType.BK){
+				Square newOpponentKingSquare = (Square)move.get(1);
+				if (!isKingInCheck(newOpponentKingSquare, opponent)){
+                legalMoveOutOfCheck = true;
+				} 
+			} else {
+				if (!isKingInCheck(opponentKingSquare, opponent)){
+                legalMoveOutOfCheck = true;
+            }
+			}
+            undoMove((FullPiece)move.get(0), (Square)move.get(1), undoData);
+        }
+        if (legalMoveOutOfCheck){
+			return false;
+		}
+		return true;
+    }
+
+
 	public static Object[][] moveFctn(FullPiece firstPiece, Square secondSquare) {
 		Object[][] toReturn = new Object[3][3];
 
@@ -142,7 +181,7 @@ public class Chess {
 		}
 
 		FullPiece potentialPiece = null;
-		Square firstSquare = new Square(firstPiece.file, firstPiece.rank);
+		Square firstSquare = new Square(firstPiece.pieceFile, firstPiece.pieceRank);
 		firstPiece.pieceFile = secondSquare.file;
 		firstPiece.pieceRank = secondSquare.rank;
 		toReturn[0][0] = firstSquare;
@@ -276,38 +315,44 @@ public class Chess {
 		Object[][] priorStatus = null;
 		if (possibleMoves.contains(secondSquare)) {
 			priorStatus = moveFctn(firstPiece, secondSquare);
-
-			//castle rights
-			if (firstPiece.pieceType == ReturnPiece.PieceType.WK) {
-				FullPiece.whiteCastleLong = false;
-				FullPiece.whiteCastleShort = false;
-			}
-			if (firstPiece.pieceType == ReturnPiece.PieceType.BK) {
-				FullPiece.blackCastleLong = false;
-				FullPiece.blackCastleShort = false;
-			}
-			if (firstFile == ReturnPiece.PieceFile.a && firstRank == 1) {
-				FullPiece.whiteCastleLong = false;
-			}
-			if (firstFile == ReturnPiece.PieceFile.h && firstRank == 1) {
-				FullPiece.whiteCastleShort = false;
-			}
-			if (firstFile == ReturnPiece.PieceFile.a && firstRank == 8) {
-				FullPiece.blackCastleLong = false;
-			}
-			if (firstFile == ReturnPiece.PieceFile.h && firstRank == 8) {
-				FullPiece.blackCastleShort = false;
-			}
-		}
-			//WE SHOULD DO CASTLE RIGHTS AFTER DECIDING IF THE MOVE IS ILLEGAL DUE TO PUTTING SELF IN CHECK
-		else {
+		} else {
 			System.out.println("second illegal - not in set of legal moves");
 			state.message = ReturnPlay.Message.ILLEGAL_MOVE;
 			return state;
 		}
 
+		// did current player put self in check
+		Square currentPlayerKingSquare = getKingSquare(currentPlayer);
+		if (isKingInCheck(currentPlayerKingSquare, currentPlayer)){
+			undoMove(firstPiece, secondSquare, priorStatus);
+			System.out.println("illegal - must get out of previous check / can't put self in check / king kiss");
+			state.message = ReturnPlay.Message.ILLEGAL_MOVE;
+			return state;
+		}
+
+		//castle rights
+		if (firstPiece.pieceType == ReturnPiece.PieceType.WK) {
+			FullPiece.whiteCastleLong = false;
+			FullPiece.whiteCastleShort = false;
+		}
+		if (firstPiece.pieceType == ReturnPiece.PieceType.BK) {
+			FullPiece.blackCastleLong = false;
+			FullPiece.blackCastleShort = false;
+		}
+		if (firstFile == ReturnPiece.PieceFile.a && firstRank == 1) {
+			FullPiece.whiteCastleLong = false;
+		}
+		if (firstFile == ReturnPiece.PieceFile.h && firstRank == 1) {
+			FullPiece.whiteCastleShort = false;
+		}
+		if (firstFile == ReturnPiece.PieceFile.a && firstRank == 8) {
+			FullPiece.blackCastleLong = false;
+		}
+		if (firstFile == ReturnPiece.PieceFile.h && firstRank == 8) {
+			FullPiece.blackCastleShort = false;
+		}
+
 		FullPiece.enPassantPossible = false;
-		
 		//en passant
 		if (firstPiece.pieceType == ReturnPiece.PieceType.WP && (firstRank + 2 == secondRank)) {
 			FullPiece.enPassant = new Pawn(ReturnPiece.PieceType.WP, firstFile, 3);
@@ -318,8 +363,6 @@ public class Chess {
 		else {
 			FullPiece.enPassant = null;
 		}
-
-		//WE SHOULD ALSO DO EN PASSANT RIGHTS AFTER DECIDING IF THE MOVE IS ILLEGAL DUE TO CHECK
 
 		FullPiece promPiece = null;
 		//2 if statements below handle promotion
@@ -367,85 +410,25 @@ public class Chess {
 			pieces.add(promPiece);
 		}
 
-		//WE SHOULD ALSO DO PROMOTIONS AFTER DECIDING IF SELF IS IN CHECK
-
-		//did current player put self in check
-		// Square currentPlayerKingSquare = getKingSquare(currentPlayer);
-		// if (isKingInCheck(currentPlayerKingSquare, currentPlayer)){
-		// 	FullPiece promotedPawnToUnpromote = null;
-		// 	if (promotedThisMove){
-		// 		firstSquare = new Square(firstFile, firstRank);
-		// 		if (currentPlayer == Chess.Player.white){
-		// 			promotedPawnToUnpromote = new Pawn(ReturnPiece.PieceType.WP, firstFile, firstRank);
-		// 		} else {
-		// 			promotedPawnToUnpromote = new Pawn(ReturnPiece.PieceType.BP, firstFile, firstRank);
-		// 		}
-		// 		squares.put(firstSquare, promotedPawnToUnpromote);
-		// 		secondSquare = new Square(secondFile, secondRank);
-		// 		if (secondSquareClone != null) {
-		// 			pieces.add(secondSquareClone);
-		// 			squares.put(secondSquare, secondSquareClone);
-		// 		} else {
-		// 			squares.remove(secondSquare);
-		// 		}
-		// 		promotedThisMove = false;
-		// 	} else if(enPassantThisMove){
-				
-		// 	} else if(WCLThisMove){
-		// 		//undo WCL
-		// 	} else if(BCLThisMove){
-		// 		//undo BCL
-		// 	} else if(WCSThisMove){
-		// 		//undo WCS
-		// 	} else if(BCSThisMove){
-		// 		//undo BCS
-		// 	} else {
-		// 		firstSquare = new Square(firstFile, firstRank);
-		// 		firstPiece.pieceFile = firstFile;
-		// 		firstPiece.pieceRank = firstRank;
-		// 		squares.put(firstSquare, firstPiece);
-		// 		if (secondSquareClone != null) {
-		// 			pieces.add(secondSquareClone);
-		// 			squares.put(secondSquare, secondSquareClone);
-		// 		} else {
-		// 			squares.remove(secondSquare);
-		// 		}
-		// 	}
-		// 	//NEED TO UNDO CASTLING, EN PASSANT
-
-		// 	state.piecesOnBoard = castPieceArray(pieces);
-
-		// 	System.out.println("illegal - must get out of previous check / can't put self in check / king kiss");
-		// 	state.message = ReturnPlay.Message.ILLEGAL_MOVE;
-		// 	return state;
-		// }
-
-		// checkLastMove = false;
-		// promotedThisMove = false;
-		// boolean enPassantThisMove = false;
-		// boolean WCLThisMove = false;
-		// boolean BCLThisMove = false;
-		// boolean WCSThisMove = false;
-		// boolean BCSThisMove = false;
-
+		checkLastMove = false;
 		state.piecesOnBoard = castPieceArray(pieces);
 
-		// //did current player put the opponent in check, and if so, is it mate
-		// Player opponent = opponentColor();
-		// Square opponentKingSquare = getKingSquare(opponent);
-		// if (isKingInCheck(opponentKingSquare, opponent)){
-		// 	// if (checkmate(opponentKingSquare, opponent)){
-		// 	// 	if (opponent == Chess.Player.white){
-		// 	// 		state.message = ReturnPlay.Message.CHECKMATE_BLACK_WINS;
-		// 	// 	} else {
-		// 	// 		state.message = ReturnPlay.Message.CHECKMATE_WHITE_WINS;
-		// 	// 	}
-		// 	// 	return state;
-		// 	// }
+		//did current player put the opponent in check, and if so, is it mate
+		Player opponent = opponentColor();
+		Square opponentKingSquare = getKingSquare(opponent);
+		if (isKingInCheck(opponentKingSquare, opponent)){
+			if (checkmate(opponentKingSquare, opponent)){
+				if (opponent == Chess.Player.white){
+					state.message = ReturnPlay.Message.CHECKMATE_BLACK_WINS;
+				} else {
+					state.message = ReturnPlay.Message.CHECKMATE_WHITE_WINS;
+				}
+				return state;
+			}
 
-		// 	checkLastMove = true; //for next move, to ensure player gets out of check
-		// 	state.message = ReturnPlay.Message.CHECK;
-		// }
+			checkLastMove = true; //for next move, to ensure player gets out of check
+			state.message = ReturnPlay.Message.CHECK;
+		}
 
 		if (currentPlayer == Chess.Player.white) {
 			currentPlayer = Player.black;
