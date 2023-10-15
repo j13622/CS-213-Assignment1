@@ -102,40 +102,9 @@ public class Chess {
 		return false;
 	}
 
-	public static Object[][] moveFctn(FullPiece firstPiece, Square secondSquare) {
-		FullPiece potentialPiece = null;
+	public static Object[][] moveFctn(Square firstSquare, FullPiece firstPiece, Square secondSquare) {
+
 		Object[][] toReturn = new Object[3][3];
-		firstPiece.pieceFile = secondSquare.file;
-		firstPiece.pieceRank = secondSquare.rank;
-		Square firstSquare = new Square(firstPiece.pieceFile, firstPiece.pieceRank);
-		toReturn[0][0] = firstSquare;
-		squares.remove(firstSquare); 
-		potentialPiece = squares.get(secondSquare);
-		if (potentialPiece != null) {
-			toReturn[0][1] = potentialPiece;
-			pieces.remove(potentialPiece);
-		}
-		squares.put(secondSquare, firstPiece); //must remove later and put second piece back
-
-		//enPassant
-		Square enPassantSqr = null;
-		ReturnPiece passantPawn = null;
-		if (FullPiece.enPassant != null && FullPiece.enPassantPossible && FullPiece.enPassant.pieceFile == secondSquare.file && FullPiece.enPassant.pieceRank == secondSquare.rank) {
-			int x;
-			if (currentPlayer == Chess.Player.white) {
-				x = -1;
-			}
-			else {
-				x = 1;
-			}
-			enPassantSqr = new Square(secondFile, secondRank+(x*1));
-			passantPawn = squares.get(enPassantSqr);
-			toReturn[1][0] = enPassantSqr; //must put back
-			toReturn[1][1] = passantPawn; //must put back
-			squares.remove(enPassantSqr);
-			pieces.remove(passantPawn);
-		}
-
 		//castling
 		ReturnPiece.PieceFile initialRookFile = null;
 		int castleRank = 0;
@@ -170,6 +139,37 @@ public class Chess {
 			squares.put(finalRookSquare, rook);
 			rook.pieceFile = finalRookFile;
 			squares.remove(rookSqr);
+		}
+
+		FullPiece potentialPiece = null;
+		firstPiece.pieceFile = secondSquare.file;
+		firstPiece.pieceRank = secondSquare.rank;
+		toReturn[0][0] = firstSquare;
+		squares.remove(firstSquare);
+		potentialPiece = squares.get(secondSquare);
+		if (potentialPiece != null) {
+			toReturn[0][1] = potentialPiece;
+			pieces.remove(potentialPiece);
+		}
+		squares.put(secondSquare, firstPiece); //must remove later and put second piece back
+
+		//enPassant
+		Square enPassantSqr = null;
+		ReturnPiece passantPawn = null;
+		if (FullPiece.enPassant != null && FullPiece.enPassantPossible && FullPiece.enPassant.pieceFile == secondSquare.file && FullPiece.enPassant.pieceRank == secondSquare.rank) {
+			int x;
+			if (currentPlayer == Chess.Player.white) {
+				x = -1;
+			}
+			else {
+				x = 1;
+			}
+			enPassantSqr = new Square(secondSquare.file, secondSquare.rank+(x*1));
+			passantPawn = squares.get(enPassantSqr);
+			toReturn[1][0] = enPassantSqr; //must put back
+			toReturn[1][1] = passantPawn; //must put back
+			squares.remove(enPassantSqr);
+			pieces.remove(passantPawn);
 		}
 		return toReturn;
 	}
@@ -234,6 +234,7 @@ public class Chess {
 	 *         the contents of the returned ReturnPlay instance.
 	 */
 	public static ReturnPlay play(String move) {
+
 		state.message = null;
 
 		int first = 0;
@@ -273,8 +274,10 @@ public class Chess {
 		System.out.println(possibleMoves);
 		Object[][] priorStatus = null;
 		if (possibleMoves.contains(secondSquare)) {
-			priorStatus = moveFctn(firstPiece, secondSquare);
-			
+			System.out.println(squares);
+			priorStatus = moveFctn(firstSquare, firstPiece, secondSquare);
+			System.out.println(squares);
+
 			//castle rights
 			if (firstPiece.pieceType == ReturnPiece.PieceType.WK) {
 				FullPiece.whiteCastleLong = false;
@@ -296,9 +299,8 @@ public class Chess {
 			if (firstFile == ReturnPiece.PieceFile.h && firstRank == 8) {
 				FullPiece.blackCastleShort = false;
 			}
-
+		}
 			//WE SHOULD DO CASTLE RIGHTS AFTER DECIDING IF THE MOVE IS ILLEGAL DUE TO PUTTING SELF IN CHECK
-
 		else {
 			System.out.println("second illegal - not in set of legal moves");
 			state.message = ReturnPlay.Message.ILLEGAL_MOVE;
@@ -369,89 +371,88 @@ public class Chess {
 		//WE SHOULD ALSO DO PROMOTIONS AFTER DECIDING IF SELF IS IN CHECK
 
 		//did current player put self in check
-		Square currentPlayerKingSquare = getKingSquare(currentPlayer);
-		if (isKingInCheck(currentPlayerKingSquare, currentPlayer)){
-			FullPiece promotedPawnToUnpromote = null;
-			if (promotedThisMove){
-				firstSquare = new Square(firstFile, firstRank);
-				if (currentPlayer == Chess.Player.white){
-					promotedPawnToUnpromote = new Pawn(ReturnPiece.PieceType.WP, firstFile, firstRank);
-				} else {
-					promotedPawnToUnpromote = new Pawn(ReturnPiece.PieceType.BP, firstFile, firstRank);
-				}
-				squares.put(firstSquare, promotedPawnToUnpromote);
-				secondSquare = new Square(secondFile, secondRank);
-				if (secondSquareClone != null) {
-					pieces.add(secondSquareClone);
-					squares.put(secondSquare, secondSquareClone);
-				} else {
-					squares.remove(secondSquare);
-				}
-				promotedThisMove = false;
-			} else if(enPassantThisMove){
+		// Square currentPlayerKingSquare = getKingSquare(currentPlayer);
+		// if (isKingInCheck(currentPlayerKingSquare, currentPlayer)){
+		// 	FullPiece promotedPawnToUnpromote = null;
+		// 	if (promotedThisMove){
+		// 		firstSquare = new Square(firstFile, firstRank);
+		// 		if (currentPlayer == Chess.Player.white){
+		// 			promotedPawnToUnpromote = new Pawn(ReturnPiece.PieceType.WP, firstFile, firstRank);
+		// 		} else {
+		// 			promotedPawnToUnpromote = new Pawn(ReturnPiece.PieceType.BP, firstFile, firstRank);
+		// 		}
+		// 		squares.put(firstSquare, promotedPawnToUnpromote);
+		// 		secondSquare = new Square(secondFile, secondRank);
+		// 		if (secondSquareClone != null) {
+		// 			pieces.add(secondSquareClone);
+		// 			squares.put(secondSquare, secondSquareClone);
+		// 		} else {
+		// 			squares.remove(secondSquare);
+		// 		}
+		// 		promotedThisMove = false;
+		// 	} else if(enPassantThisMove){
 				
-			} else if(WCLThisMove){
-				//undo WCL
-			} else if(BCLThisMove){
-				//undo BCL
-			} else if(WCSThisMove){
-				//undo WCS
-			} else if(BCSThisMove){
-				//undo BCS
-			} else {
-				firstSquare = new Square(firstFile, firstRank);
-				firstPiece.pieceFile = firstFile;
-				firstPiece.pieceRank = firstRank;
-				squares.put(firstSquare, firstPiece);
-				if (secondSquareClone != null) {
-					pieces.add(secondSquareClone);
-					squares.put(secondSquare, secondSquareClone);
-				} else {
-					squares.remove(secondSquare);
-				}
-			}
-			//NEED TO UNDO CASTLING, EN PASSANT
+		// 	} else if(WCLThisMove){
+		// 		//undo WCL
+		// 	} else if(BCLThisMove){
+		// 		//undo BCL
+		// 	} else if(WCSThisMove){
+		// 		//undo WCS
+		// 	} else if(BCSThisMove){
+		// 		//undo BCS
+		// 	} else {
+		// 		firstSquare = new Square(firstFile, firstRank);
+		// 		firstPiece.pieceFile = firstFile;
+		// 		firstPiece.pieceRank = firstRank;
+		// 		squares.put(firstSquare, firstPiece);
+		// 		if (secondSquareClone != null) {
+		// 			pieces.add(secondSquareClone);
+		// 			squares.put(secondSquare, secondSquareClone);
+		// 		} else {
+		// 			squares.remove(secondSquare);
+		// 		}
+		// 	}
+		// 	//NEED TO UNDO CASTLING, EN PASSANT
 
-			state.piecesOnBoard = castPieceArray(pieces);
+		// 	state.piecesOnBoard = castPieceArray(pieces);
 
-			System.out.println("illegal - must get out of previous check / can't put self in check / king kiss");
-			state.message = ReturnPlay.Message.ILLEGAL_MOVE;
-			return state;
-		}
+		// 	System.out.println("illegal - must get out of previous check / can't put self in check / king kiss");
+		// 	state.message = ReturnPlay.Message.ILLEGAL_MOVE;
+		// 	return state;
+		// }
 
-		checkLastMove = false;
-		promotedThisMove = false;
-		boolean enPassantThisMove = false;
-		boolean WCLThisMove = false;
-		boolean BCLThisMove = false;
-		boolean WCSThisMove = false;
-		boolean BCSThisMove = false;
+		// checkLastMove = false;
+		// promotedThisMove = false;
+		// boolean enPassantThisMove = false;
+		// boolean WCLThisMove = false;
+		// boolean BCLThisMove = false;
+		// boolean WCSThisMove = false;
+		// boolean BCSThisMove = false;
 
 		state.piecesOnBoard = castPieceArray(pieces);
 
-		//did current player put the opponent in check, and if so, is it mate
-		Player opponent = opponentColor();
-		Square opponentKingSquare = getKingSquare(opponent);
-		if (isKingInCheck(opponentKingSquare, opponent)){
-			// if (checkmate(opponentKingSquare, opponent)){
-			// 	if (opponent == Chess.Player.white){
-			// 		state.message = ReturnPlay.Message.CHECKMATE_BLACK_WINS;
-			// 	} else {
-			// 		state.message = ReturnPlay.Message.CHECKMATE_WHITE_WINS;
-			// 	}
-			// 	return state;
-			// }
+		// //did current player put the opponent in check, and if so, is it mate
+		// Player opponent = opponentColor();
+		// Square opponentKingSquare = getKingSquare(opponent);
+		// if (isKingInCheck(opponentKingSquare, opponent)){
+		// 	// if (checkmate(opponentKingSquare, opponent)){
+		// 	// 	if (opponent == Chess.Player.white){
+		// 	// 		state.message = ReturnPlay.Message.CHECKMATE_BLACK_WINS;
+		// 	// 	} else {
+		// 	// 		state.message = ReturnPlay.Message.CHECKMATE_WHITE_WINS;
+		// 	// 	}
+		// 	// 	return state;
+		// 	// }
 
-			checkLastMove = true; //for next move, to ensure player gets out of check
-			state.message = ReturnPlay.Message.CHECK;
-		}
+		// 	checkLastMove = true; //for next move, to ensure player gets out of check
+		// 	state.message = ReturnPlay.Message.CHECK;
+		// }
 
 		if (currentPlayer == Chess.Player.white) {
 			currentPlayer = Player.black;
 		} else {
 			currentPlayer = Player.white;
 		}
-
 		return state;
 	}
 	
@@ -1142,14 +1143,14 @@ class King extends FullPiece {
 				moves.add(new Square(ReturnPiece.PieceFile.c, 1));
 			}
 		}
-		else if (color == Chess.Player.white && whiteCastleShort) {
+		if (color == Chess.Player.white && whiteCastleShort) {
 			FullPiece piece1 = Chess.squares.get(new Square(ReturnPiece.PieceFile.f, 1));
 			FullPiece piece2 = Chess.squares.get(new Square(ReturnPiece.PieceFile.g, 1));
 			if (piece1 == null && piece2 == null) {
 				moves.add(new Square(ReturnPiece.PieceFile.g, 1));
 			}
 		}
-		else if (color == Chess.Player.black && blackCastleLong) {
+		if (color == Chess.Player.black && blackCastleLong) {
 			FullPiece piece1 = Chess.squares.get(new Square(ReturnPiece.PieceFile.b, 8));
 			FullPiece piece2 = Chess.squares.get(new Square(ReturnPiece.PieceFile.c, 8));
 			FullPiece piece3 = Chess.squares.get(new Square(ReturnPiece.PieceFile.d, 8));
@@ -1157,7 +1158,7 @@ class King extends FullPiece {
 				moves.add(new Square(ReturnPiece.PieceFile.c, 8));
 			}
 		}
-		else if (color == Chess.Player.black && blackCastleShort) {
+		if (color == Chess.Player.black && blackCastleShort) {
 			FullPiece piece1 = Chess.squares.get(new Square(ReturnPiece.PieceFile.f, 8));
 			FullPiece piece2 = Chess.squares.get(new Square(ReturnPiece.PieceFile.g, 8));
 			if (piece1 == null && piece2 == null) {
