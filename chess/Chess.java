@@ -102,6 +102,25 @@ public class Chess {
 		return false;
 	}
 
+	// public static HashMap<Square, FullPiece> deepCopySquares(HashMap<Square, FullPiece> ogSquares) {
+    //  HashMap<Square, FullPiece> copyOfSquares = new HashMap<>();
+    //  for (Map.Entry<Square, FullPiece> entry : ogSquares.entrySet()) {
+    //      Square square = entry.getKey();
+    //      FullPiece piece = entry.getValue().clone();
+    //      copyOfSquares.put(square, piece);
+    //  }
+    //  return copyOfSquares;
+    // }
+
+
+    // public static ArrayList<FullPiece> deepCopyPieces(ArrayList<FullPiece> ogPieces) {
+    //  ArrayList<FullPiece> copyOfPieces = new ArrayList<>();
+    //  for (FullPiece piece : ogPieces) {
+    //      copyOfPieces.add(piece.clone());
+    //  }
+    //  return copyOfPieces;
+    // }
+
 	/**
 	 * Plays the next move for whichever player has the turn.
 	 * 
