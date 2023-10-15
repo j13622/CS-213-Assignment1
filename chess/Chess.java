@@ -102,6 +102,102 @@ public class Chess {
 		return false;
 	}
 
+	public static Object[][] moveFctn(FullPiece firstPiece, Square secondSquare) {
+		FullPiece potentialPiece = null;
+		Object[][] toReturn = new Object[3][3];
+		firstPiece.pieceFile = secondSquare.file;
+		firstPiece.pieceRank = secondSquare.rank;
+		toReturn[0][0] = firstSquare;
+		squares.remove(firstSquare); 
+		potentialPiece = squares.get(secondSquare);
+		if (potentialPiece != null) {
+			toReturn[0][1] = potentialPiece;
+			pieces.remove(potentialPiece);
+		}
+		squares.put(secondSquare, firstPiece); //must remove later and put second piece back
+
+		//enPassant
+		Square enPassantSqr = null;
+		ReturnPiece passantPawn = null;
+		if (FullPiece.enPassant != null && FullPiece.enPassantPossible && FullPiece.enPassant.pieceFile == secondFile && FullPiece.enPassant.pieceRank == secondRank) {
+			int x;
+			if (currentPlayer == Chess.Player.white) {
+				x = -1;
+			}
+			else {
+				x = 1;
+			}
+			enPassantSqr = new Square(secondFile, secondRank+(x*1));
+			passantPawn = squares.get(enPassantSqr);
+			toReturn[1][0] = enPassantSqr; //must put back
+			toReturn[1][1] = passantPawn; //must put back
+			squares.remove(enPassantSqr);
+			pieces.remove(passantPawn);
+		}
+
+		//castling
+		ReturnPiece.PieceFile initialRookFile = null;
+		int castleRank = 0;
+		ReturnPiece.PieceFile finalRookFile = null;
+		if (firstPiece.pieceType == ReturnPiece.PieceType.WK && firstFile == ReturnPiece.PieceFile.e && secondFile == ReturnPiece.PieceFile.c) {
+			initialRookFile = ReturnPiece.PieceFile.a;
+			castleRank = 1;
+			finalRookFile = ReturnPiece.PieceFile.d;
+		}
+		if (firstPiece.pieceType == ReturnPiece.PieceType.WK && firstFile == ReturnPiece.PieceFile.e && secondFile == ReturnPiece.PieceFile.g) {
+			initialRookFile = ReturnPiece.PieceFile.h;
+			castleRank = 1;
+			finalRookFile = ReturnPiece.PieceFile.f;
+		}
+		if (firstPiece.pieceType == ReturnPiece.PieceType.BK && firstFile == ReturnPiece.PieceFile.e && secondFile == ReturnPiece.PieceFile.c) {
+			initialRookFile = ReturnPiece.PieceFile.a;
+			castleRank = 8;
+			finalRookFile = ReturnPiece.PieceFile.d;
+		}
+		if (firstPiece.pieceType == ReturnPiece.PieceType.BK && firstFile == ReturnPiece.PieceFile.e && secondFile == ReturnPiece.PieceFile.g) {
+			initialRookFile = ReturnPiece.PieceFile.h;
+			castleRank = 8;
+			finalRookFile = ReturnPiece.PieceFile.f;
+		}
+		if (initialRookFile != null) {
+			Square rookSqr = new Square(initialRookFile, castleRank);
+			FullPiece rook = squares.get(rookSqr);
+			Square finalRookSquare = new Square(finalRookFile, castleRank); //must rm this
+			toReturn[2][0] = rookSqr; //must put rook back here
+			toReturn[2][1] = rook; //must move this back
+			toReturn[2][2] = finalRookSquare
+			squares.put(finalRookSquare, rook);
+			rook.pieceFile = finalRookFile;
+			squares.remove(rookSqr);
+		}
+		return toReturn;
+	}
+
+	public static void undoMove(FullPiece firstPiece, Square secondSquare, Object[][] undoData) {
+		//undoes regular move
+		firstPiece.pieceFile = undoData[0][0].file;
+		firstPiece.pieceRank = undoData[0][0].rank;
+		squares.put(undoData[0][0], firstPiece);
+		if (undoData[0][1] != null) {
+			pieces.add(undoData[0][1]);
+			squares.put(secondSquare, undoData[0][1]);
+		} else {
+			squares.remove(secondSquare);
+		}
+		//undoes enpassant
+		if (undoData[1][0] != null) {
+			squares.put(undoData[1][0], undoData[1][1]);
+			pieces.add(undoData[1][1]);
+		}
+		//undoes castle
+		if (undoData[2][0] != null) {
+			FullPiece rook = undoData[2][1];
+			squares.put(undoData[2][0], rook);
+			squares.remove(finalRookSquare);
+			rook.pieceFile = undoData[2][0].file;
+		}
+	}
+
 	// public static HashMap<Square, FullPiece> deepCopySquares(HashMap<Square, FullPiece> ogSquares) {
     //  HashMap<Square, FullPiece> copyOfSquares = new HashMap<>();
     //  for (Map.Entry<Square, FullPiece> entry : ogSquares.entrySet()) {
@@ -166,22 +262,12 @@ public class Chess {
 		Square secondSquare = new Square(secondFile, secondRank);
 		FullPiece.enPassantPossible = false;
 		HashSet<Square> possibleMoves = firstPiece.see();
-		FullPiece potentialPiece = null;
-		FullPiece secondSquareClone = null;
 
 		System.out.println(possibleMoves);
+		Object[][] priorStatus = null;
 		if (possibleMoves.contains(secondSquare)) {
-
-			firstPiece.pieceFile = secondFile;
-			firstPiece.pieceRank = secondRank;
-			squares.remove(firstSquare);
-			potentialPiece = squares.get(secondSquare);
-			if (potentialPiece != null) {
-				secondSquareClone = potentialPiece.clone();
-				pieces.remove(potentialPiece);
-			}
-			squares.put(secondSquare, firstPiece);
-
+			priorStatus = moveFctn(firstPiece, secondSquare);
+			
 			//castle rights
 			if (firstPiece.pieceType == ReturnPiece.PieceType.WK) {
 				FullPiece.whiteCastleLong = false;
@@ -204,65 +290,15 @@ public class Chess {
 				FullPiece.blackCastleShort = false;
 			}
 
-			//enPassant
-			Square enPassantSqr = null;
-			ReturnPiece passantPawn = null;
-			if (FullPiece.enPassant != null && FullPiece.enPassantPossible && FullPiece.enPassant.pieceFile == secondFile && FullPiece.enPassant.pieceRank == secondRank) {
-				int x;
-				if (currentPlayer == Chess.Player.white) {
-					x = -1;
-				}
-				else {
-					x = 1;
-				}
-				enPassantSqr = new Square(secondFile, secondRank+(x*1));
-				passantPawn = squares.get(enPassantSqr);
-				squares.remove(enPassantSqr);
-				pieces.remove(potentialPiece);
-			}
+			//WE SHOULD DO CASTLE RIGHTS AFTER DECIDING IF THE MOVE IS ILLEGAL DUE TO PUTTING SELF IN CHECK
 
-			//castling
-			ReturnPiece.PieceFile initialRookFile = null;
-			int castleRank = 0;
-			ReturnPiece.PieceFile finalRookFile = null;
-			if (firstPiece.pieceType == ReturnPiece.PieceType.WK && firstFile == ReturnPiece.PieceFile.e && secondFile == ReturnPiece.PieceFile.c) {
-				initialRookFile = ReturnPiece.PieceFile.a;
-				castleRank = 1;
-				finalRookFile = ReturnPiece.PieceFile.d;
-				WCLThisMove = true;
-			}
-			if (firstPiece.pieceType == ReturnPiece.PieceType.WK && firstFile == ReturnPiece.PieceFile.e && secondFile == ReturnPiece.PieceFile.g) {
-				initialRookFile = ReturnPiece.PieceFile.h;
-				castleRank = 1;
-				finalRookFile = ReturnPiece.PieceFile.f;
-				WCSThisMove = true;
-			}
-			if (firstPiece.pieceType == ReturnPiece.PieceType.BK && firstFile == ReturnPiece.PieceFile.e && secondFile == ReturnPiece.PieceFile.c) {
-				initialRookFile = ReturnPiece.PieceFile.a;
-				castleRank = 8;
-				finalRookFile = ReturnPiece.PieceFile.d;
-				BCLThisMove = true;
-			}
-			if (firstPiece.pieceType == ReturnPiece.PieceType.BK && firstFile == ReturnPiece.PieceFile.e && secondFile == ReturnPiece.PieceFile.g) {
-				initialRookFile = ReturnPiece.PieceFile.h;
-				castleRank = 8;
-				finalRookFile = ReturnPiece.PieceFile.f;
-				BCSThisMove = true;
-			}
-			if (initialRookFile != null) {
-				Square rookSqr = new Square(initialRookFile, castleRank);
-				FullPiece rook = squares.get(rookSqr);
-				squares.put(new Square(finalRookFile, castleRank), rook);
-				rook.pieceFile = finalRookFile;
-				squares.remove(rookSqr);
-			}
-		} 
 		else {
 			System.out.println("second illegal - not in set of legal moves");
 			state.message = ReturnPlay.Message.ILLEGAL_MOVE;
 			return state;
 		}
 
+		FullPiece.enPassantPossible = false;
 		
 		//en passant
 		if (firstPiece.pieceType == ReturnPiece.PieceType.WP && (firstRank + 2 == secondRank)) {
@@ -274,6 +310,8 @@ public class Chess {
 		else {
 			FullPiece.enPassant = null;
 		}
+
+		//WE SHOULD ALSO DO EN PASSANT RIGHTS AFTER DECIDING IF THE MOVE IS ILLEGAL DUE TO CHECK
 
 		FullPiece promPiece = null;
 		//2 if statements below handle promotion
@@ -320,6 +358,8 @@ public class Chess {
 			squares.put(new Square(secondFile, secondRank), promPiece);
 			pieces.add(promPiece);
 		}
+
+		//WE SHOULD ALSO DO PROMOTIONS AFTER DECIDING IF SELF IS IN CHECK
 
 		//did current player put self in check
 		Square currentPlayerKingSquare = getKingSquare(currentPlayer);
