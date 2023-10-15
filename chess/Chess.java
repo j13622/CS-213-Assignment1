@@ -102,9 +102,9 @@ public class Chess {
 		return false;
 	}
 
-	public static Object[][] moveFctn(Square firstSquare, FullPiece firstPiece, Square secondSquare) {
-
+	public static Object[][] moveFctn(FullPiece firstPiece, Square secondSquare) {
 		Object[][] toReturn = new Object[3][3];
+
 		//castling
 		ReturnPiece.PieceFile initialRookFile = null;
 		int castleRank = 0;
@@ -142,6 +142,7 @@ public class Chess {
 		}
 
 		FullPiece potentialPiece = null;
+		Square firstSquare = new Square(firstPiece.file, firstPiece.rank);
 		firstPiece.pieceFile = secondSquare.file;
 		firstPiece.pieceRank = secondSquare.rank;
 		toReturn[0][0] = firstSquare;
@@ -274,9 +275,7 @@ public class Chess {
 		System.out.println(possibleMoves);
 		Object[][] priorStatus = null;
 		if (possibleMoves.contains(secondSquare)) {
-			System.out.println(squares);
-			priorStatus = moveFctn(firstSquare, firstPiece, secondSquare);
-			System.out.println(squares);
+			priorStatus = moveFctn(firstPiece, secondSquare);
 
 			//castle rights
 			if (firstPiece.pieceType == ReturnPiece.PieceType.WK) {
