@@ -107,6 +107,7 @@ public class Chess {
 		Object[][] toReturn = new Object[3][3];
 		firstPiece.pieceFile = secondSquare.file;
 		firstPiece.pieceRank = secondSquare.rank;
+		Square firstSquare = new Square(firstPiece.pieceFile, firstPiece.pieceRank);
 		toReturn[0][0] = firstSquare;
 		squares.remove(firstSquare); 
 		potentialPiece = squares.get(secondSquare);
