@@ -166,7 +166,7 @@ public class Chess {
 			Square finalRookSquare = new Square(finalRookFile, castleRank); //must rm this
 			toReturn[2][0] = rookSqr; //must put rook back here
 			toReturn[2][1] = rook; //must move this back
-			toReturn[2][2] = finalRookSquare
+			toReturn[2][2] = finalRookSquare;
 			squares.put(finalRookSquare, rook);
 			rook.pieceFile = finalRookFile;
 			squares.remove(rookSqr);
@@ -176,26 +176,32 @@ public class Chess {
 
 	public static void undoMove(FullPiece firstPiece, Square secondSquare, Object[][] undoData) {
 		//undoes regular move
-		firstPiece.pieceFile = undoData[0][0].file;
-		firstPiece.pieceRank = undoData[0][0].rank;
-		squares.put(undoData[0][0], firstPiece);
+		Square firstSquare = (Square) undoData[0][0];
+		firstPiece.pieceFile = firstSquare.file;
+		firstPiece.pieceRank = firstSquare.rank;
+		squares.put(firstSquare, firstPiece);
 		if (undoData[0][1] != null) {
-			pieces.add(undoData[0][1]);
-			squares.put(secondSquare, undoData[0][1]);
+			FullPiece secondPiece = (FullPiece) undoData[0][1];
+			pieces.add(secondPiece);
+			squares.put(secondSquare, secondPiece);
 		} else {
 			squares.remove(secondSquare);
 		}
 		//undoes enpassant
 		if (undoData[1][0] != null) {
-			squares.put(undoData[1][0], undoData[1][1]);
-			pieces.add(undoData[1][1]);
+			Square passantSqr = (Square) undoData[1][0];
+			FullPiece passantPiece = (FullPiece) undoData[1][1];
+			squares.put(passantSqr, passantPiece);
+			pieces.add(passantPiece);
 		}
 		//undoes castle
 		if (undoData[2][0] != null) {
+			Square firstRookSquare = undoData[2][0];
 			FullPiece rook = undoData[2][1];
-			squares.put(undoData[2][0], rook);
+			Square finalRookSquare = undoData[2][2];
+			squares.put(firstRookSquare, rook);
 			squares.remove(finalRookSquare);
-			rook.pieceFile = undoData[2][0].file;
+			rook.pieceFile = firstRookSquare.file;
 		}
 	}
 
