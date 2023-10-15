@@ -3,9 +3,9 @@ package chess;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.EnumMap;
 import java.util.EnumSet;
-import java.lang.reflect.Field;
 
 class ReturnPiece {
 	static enum PieceType {WP, WR, WN, WB, WQ, WK, 
@@ -41,43 +41,20 @@ class ReturnPlay {
 	Message message;
 }
 
-class ReturnPlayCopy {
-	enum Message {ILLEGAL_MOVE, DRAW, 
-				  RESIGN_BLACK_WINS, RESIGN_WHITE_WINS, 
-				  CHECK, CHECKMATE_BLACK_WINS,	CHECKMATE_WHITE_WINS, 
-				  STALEMATE};
-	
-	ArrayList<ReturnPiece> piecesOnBoard;
-	Message message;
-
-	public ReturnPlayCopy(ReturnPlay returnPlay){
-		this.piecesOnBoard = new ArrayList<ReturnPiece>();
-		ArrayList<ReturnPiece> originalPieces = returnPlay.piecesOnBoard;
-		for (ReturnPiece originalPiece : originalPieces){
-			ReturnPiece piece = new ReturnPiece(originalPiece.pieceType, originalPiece.pieceFile, originalPiece.pieceRank);
-			this.piecesOnBoard.add(piece);
-		}
-		/*
-		Field[] fields = ReturnPlay.class.getDeclaredFields();
-		try{
-			for (Field field : fields){
-				field.setAccessible(true);
-				field.set(this, field.get(returnPlay));
-			}
-		} catch(IllegalAccessException exception) {
-			exception.printStackTrace();
-		}
-		 */
-		
-	}
-}
-
 public class Chess {
 	static enum Player { white, black }
 	static ArrayList<FullPiece> pieces;
 	static HashMap<Square, FullPiece> squares;
 	static Player currentPlayer;
 	static ReturnPlay state;
+
+	static boolean checkLastMove;
+	static boolean promotedThisMove;
+	static boolean enPassantThisMove;
+	static boolean WCLThisMove;
+	static boolean BCLThisMove;
+	static boolean WCSThisMove;
+	static boolean BCSThisMove;
 
 	public static ArrayList<ReturnPiece> castPieceArray(ArrayList<FullPiece> fullPieces) {
 		ArrayList<ReturnPiece> returnPieces = new ArrayList<ReturnPiece>();
@@ -87,92 +64,41 @@ public class Chess {
 		return returnPieces;
 	}
 
-	public static boolean isMyKingInCheck(){
-		//use- see if current player king is in check after player makes move
-
-		//gets current player's king's square
-		Square kingSquare = null;
-		if (currentPlayer == Chess.Player.white){
-			for (FullPiece potentiallyKing : pieces){
-				if (potentiallyKing.pieceType == ReturnPiece.PieceType.WK){
-					kingSquare = new Square(potentiallyKing.pieceFile, potentiallyKing.pieceRank); 
-				}
-			}
-		}
-		else {
-			for (FullPiece potentiallyKing : pieces){
-				if (potentiallyKing.pieceType == ReturnPiece.PieceType.BK){
-					kingSquare = new Square(potentiallyKing.pieceFile, potentiallyKing.pieceRank); 
-				}
-			}
-		}
-		//determines if any of opponenet's pieces can see the current player's king
-		HashSet<Square> allSquaresOpponentSees = new HashSet<Square>();
-		for (FullPiece opponentPiece : pieces){
-			if (opponentPiece.color != currentPlayer && opponentPiece.pieceType != ReturnPiece.PieceType.WK && opponentPiece.pieceType != ReturnPiece.PieceType.BK){
-				HashSet<Square> currentOpponentPieceSees = new HashSet<Square>();
-				currentOpponentPieceSees = opponentPiece.see();
-				allSquaresOpponentSees.addAll(currentOpponentPieceSees);
-			}
-		}
-		if (allSquaresOpponentSees.contains(kingSquare)){
-			return true;
-		}
-
-		return false;
+	public static Player opponentColor(){
+		Player opponent = (currentPlayer == Player.white) ? Player.black : Player.white;
+		return opponent;
 	}
 
-	public static boolean isOpponentKingInCheck(){
-		//use- see if opponent king is in check after current player makes any move
-
-		//gets opponent king's square
+	public static Square getKingSquare(Player player){
 		Square kingSquare = null;
-		if (currentPlayer == Chess.Player.white){
-			for (FullPiece potentiallyKing : pieces){
-				if (potentiallyKing.pieceType == ReturnPiece.PieceType.BK){
-					kingSquare = new Square(potentiallyKing.pieceFile, potentiallyKing.pieceRank); 
+		for (FullPiece potentiallyKing : pieces){
+				if (player == Chess.Player.white){
+					if (potentiallyKing.pieceType == ReturnPiece.PieceType.WK){
+						kingSquare = new Square(potentiallyKing.pieceFile, potentiallyKing.pieceRank);
+					}
+				} else {
+					if (potentiallyKing.pieceType == ReturnPiece.PieceType.BK){
+						kingSquare = new Square(potentiallyKing.pieceFile, potentiallyKing.pieceRank);
+					}
 				}
 			}
-		}
-		else {
-			for (FullPiece potentiallyKing : pieces){
-				if (potentiallyKing.pieceType == ReturnPiece.PieceType.WK){
-					kingSquare = new Square(potentiallyKing.pieceFile, potentiallyKing.pieceRank); 
-				}
-			}
-		}
-		//determines if any of current player's pieces can see opponent king
-		HashSet<Square> allSquaresOpponentSees = new HashSet<Square>();
-		for (FullPiece myPiece : pieces){
-			if (myPiece.color == currentPlayer && myPiece.pieceType != ReturnPiece.PieceType.WK && myPiece.pieceType != ReturnPiece.PieceType.BK){
-				HashSet<Square> myPiecesSee = new HashSet<Square>();
-				myPiecesSee = myPiece.see();
-				allSquaresOpponentSees.addAll(myPiecesSee);
-			}
-		}
-		if (allSquaresOpponentSees.contains(kingSquare)){
-			return true;
-		}
-
-		return false;
+		return kingSquare;
 	}
 
-
-	public static boolean isKingInCheck(Square KingSquare){
-		//use- see if current player's king is hypothetically walking into check
-
-		HashSet<Square> allSquaresOpponentSees = new HashSet<Square>();
+	public static boolean isKingInCheck(Square kingSquare, Player player){
+		HashSet<Square> allSquaresSeen = new HashSet<Square>();
 		for (FullPiece opponentPiece : pieces){
-			if (opponentPiece.color != currentPlayer && opponentPiece.pieceType != ReturnPiece.PieceType.WK && opponentPiece.pieceType != ReturnPiece.PieceType.BK){
+			if (opponentPiece.color != player){
 				HashSet<Square> currentOpponentPieceSees = new HashSet<Square>();
-				currentOpponentPieceSees = opponentPiece.see();
-				allSquaresOpponentSees.addAll(currentOpponentPieceSees);
+				if (opponentPiece.pieceType == ReturnPiece.PieceType.WP || opponentPiece.pieceType == ReturnPiece.PieceType.BP){
+					currentOpponentPieceSees = opponentPiece.pawnCaptures();
+				} else {
+					currentOpponentPieceSees = opponentPiece.see();
+				}
+				allSquaresSeen.addAll(currentOpponentPieceSees);
 			}
 		}
-		if (allSquaresOpponentSees.contains(KingSquare)){
-			return true;
-		}
-
+		if (allSquaresSeen.contains(kingSquare)){return true;}
 		return false;
 	}
 
@@ -186,13 +112,6 @@ public class Chess {
 	 *         the contents of the returned ReturnPlay instance.
 	 */
 	public static ReturnPlay play(String move) {
-		
-		//make a deep copy of original board state
-		ReturnPlayCopy originalState = new ReturnPlayCopy(state);
-
-		//-find out if it is chechmate
-		//-must ensure next move gets king out of check if put into it
-		
 		state.message = null;
 
 		int first = 0;
@@ -229,49 +148,17 @@ public class Chess {
 		FullPiece.enPassantPossible = false;
 		HashSet<Square> possibleMoves = firstPiece.see();
 		FullPiece potentialPiece = null;
+		FullPiece secondSquareClone = null;
 
 		System.out.println(possibleMoves);
 		if (possibleMoves.contains(secondSquare)) {
-
-			//illegal if kings kiss
-			if (firstPiece.pieceType == ReturnPiece.PieceType.WK || firstPiece.pieceType == ReturnPiece.PieceType.BK){
-				HashSet<Square> opponentKingSees = new HashSet<Square>();
-				if (currentPlayer == Chess.Player.white){
-					for (FullPiece opponentKing : pieces){
-						if (opponentKing.pieceType == ReturnPiece.PieceType.BK){
-							opponentKingSees = opponentKing.see();
-						}
-					}
-				}
-				else {
-					for (FullPiece opponentKing : pieces){
-						if (opponentKing.pieceType == ReturnPiece.PieceType.WK){
-							opponentKingSees = opponentKing.see();
-						}
-					}
-				}
-				if (opponentKingSees.contains(secondSquare)){
-					System.out.println("third illegal - king kissing king");
-					state.message = ReturnPlay.Message.ILLEGAL_MOVE;
-					return state;
-				}
-			}
-
-			//illegal to walk into check
-			if (firstPiece.pieceType == ReturnPiece.PieceType.WK || firstPiece.pieceType == ReturnPiece.PieceType.BK){
-				if (isKingInCheck(secondSquare)){
-					System.out.println("fourth illegal - king walking into check");
-					state.message = ReturnPlay.Message.ILLEGAL_MOVE;
-					return state;
-				}
-			}
-
 
 			firstPiece.pieceFile = secondFile;
 			firstPiece.pieceRank = secondRank;
 			squares.remove(firstSquare);
 			potentialPiece = squares.get(secondSquare);
 			if (potentialPiece != null) {
+				secondSquareClone = potentialPiece.clone();
 				pieces.remove(potentialPiece);
 			}
 			squares.put(secondSquare, firstPiece);
@@ -299,6 +186,8 @@ public class Chess {
 			}
 
 			//enPassant
+			Square enPassantSqr = null;
+			ReturnPiece passantPawn = null;
 			if (FullPiece.enPassant != null && FullPiece.enPassantPossible && FullPiece.enPassant.pieceFile == secondFile && FullPiece.enPassant.pieceRank == secondRank) {
 				int x;
 				if (currentPlayer == Chess.Player.white) {
@@ -307,8 +196,8 @@ public class Chess {
 				else {
 					x = 1;
 				}
-				Square enPassantSqr = new Square(secondFile, secondRank+(x*1));
-				ReturnPiece passantPawn = squares.get(enPassantSqr);
+				enPassantSqr = new Square(secondFile, secondRank+(x*1));
+				passantPawn = squares.get(enPassantSqr);
 				squares.remove(enPassantSqr);
 				pieces.remove(potentialPiece);
 			}
@@ -321,21 +210,25 @@ public class Chess {
 				initialRookFile = ReturnPiece.PieceFile.a;
 				castleRank = 1;
 				finalRookFile = ReturnPiece.PieceFile.d;
+				WCLThisMove = true;
 			}
 			if (firstPiece.pieceType == ReturnPiece.PieceType.WK && firstFile == ReturnPiece.PieceFile.e && secondFile == ReturnPiece.PieceFile.g) {
 				initialRookFile = ReturnPiece.PieceFile.h;
 				castleRank = 1;
 				finalRookFile = ReturnPiece.PieceFile.f;
+				WCSThisMove = true;
 			}
 			if (firstPiece.pieceType == ReturnPiece.PieceType.BK && firstFile == ReturnPiece.PieceFile.e && secondFile == ReturnPiece.PieceFile.c) {
 				initialRookFile = ReturnPiece.PieceFile.a;
 				castleRank = 8;
 				finalRookFile = ReturnPiece.PieceFile.d;
+				BCLThisMove = true;
 			}
 			if (firstPiece.pieceType == ReturnPiece.PieceType.BK && firstFile == ReturnPiece.PieceFile.e && secondFile == ReturnPiece.PieceFile.g) {
 				initialRookFile = ReturnPiece.PieceFile.h;
 				castleRank = 8;
 				finalRookFile = ReturnPiece.PieceFile.f;
+				BCSThisMove = true;
 			}
 			if (initialRookFile != null) {
 				Square rookSqr = new Square(initialRookFile, castleRank);
@@ -382,6 +275,7 @@ public class Chess {
 					default:
 						promPiece = new Queen(ReturnPiece.PieceType.WQ, secondFile, secondRank);
 				}
+				promotedThisMove = true;
 			}
 			if (secondRank == 1 && firstPiece.pieceType == ReturnPiece.PieceType.BP){
 				pieces.remove(firstPiece);
@@ -400,6 +294,7 @@ public class Chess {
 					default:
 						promPiece = new Queen(ReturnPiece.PieceType.BQ, secondFile, secondRank);
 				}
+				promotedThisMove = true;
 			}
 
 		if (promPiece != null) {
@@ -407,17 +302,82 @@ public class Chess {
 			pieces.add(promPiece);
 		}
 
-		if (isMyKingInCheck()){
-			state.piecesOnBoard = originalState.piecesOnBoard;
+		//did current player put self in check
+		Square currentPlayerKingSquare = getKingSquare(currentPlayer);
+		if (isKingInCheck(currentPlayerKingSquare, currentPlayer)){
+			FullPiece promotedPawnToUnpromote = null;
+			if (promotedThisMove){
+				firstSquare = new Square(firstFile, firstRank);
+				if (currentPlayer == Chess.Player.white){
+					promotedPawnToUnpromote = new Pawn(ReturnPiece.PieceType.WP, firstFile, firstRank);
+				} else {
+					promotedPawnToUnpromote = new Pawn(ReturnPiece.PieceType.BP, firstFile, firstRank);
+				}
+				squares.put(firstSquare, promotedPawnToUnpromote);
+				secondSquare = new Square(secondFile, secondRank);
+				if (secondSquareClone != null) {
+					pieces.add(secondSquareClone);
+					squares.put(secondSquare, secondSquareClone);
+				} else {
+					squares.remove(secondSquare);
+				}
+				promotedThisMove = false;
+			} else if(enPassantThisMove){
+				
+			} else if(WCLThisMove){
+				//undo WCL
+			} else if(BCLThisMove){
+				//undo BCL
+			} else if(WCSThisMove){
+				//undo WCS
+			} else if(BCSThisMove){
+				//undo BCS
+			} else {
+				firstSquare = new Square(firstFile, firstRank);
+				firstPiece.pieceFile = firstFile;
+				firstPiece.pieceRank = firstRank;
+				squares.put(firstSquare, firstPiece);
+				if (secondSquareClone != null) {
+					pieces.add(secondSquareClone);
+					squares.put(secondSquare, secondSquareClone);
+				} else {
+					squares.remove(secondSquare);
+				}
+			}
+			//NEED TO UNDO CASTLING, EN PASSANT
+
 			state.piecesOnBoard = castPieceArray(pieces);
-			System.out.println("fifth illegal - can't put own king in check");
+
+			System.out.println("illegal - must get out of previous check / can't put self in check / king kiss");
 			state.message = ReturnPlay.Message.ILLEGAL_MOVE;
 			return state;
 		}
 
-		if (isOpponentKingInCheck()){
+		checkLastMove = false;
+		promotedThisMove = false;
+		boolean enPassantThisMove = false;
+		boolean WCLThisMove = false;
+		boolean BCLThisMove = false;
+		boolean WCSThisMove = false;
+		boolean BCSThisMove = false;
+
+		state.piecesOnBoard = castPieceArray(pieces);
+
+		//did current player put the opponent in check, and if so, is it mate
+		Player opponent = opponentColor();
+		Square opponentKingSquare = getKingSquare(opponent);
+		if (isKingInCheck(opponentKingSquare, opponent)){
+			// if (checkmate(opponentKingSquare, opponent)){
+			// 	if (opponent == Chess.Player.white){
+			// 		state.message = ReturnPlay.Message.CHECKMATE_BLACK_WINS;
+			// 	} else {
+			// 		state.message = ReturnPlay.Message.CHECKMATE_WHITE_WINS;
+			// 	}
+			// 	return state;
+			// }
+
+			checkLastMove = true; //for next move, to ensure player gets out of check
 			state.message = ReturnPlay.Message.CHECK;
-			return state;
 		}
 
 		if (currentPlayer == Chess.Player.white) {
@@ -426,7 +386,6 @@ public class Chess {
 			currentPlayer = Player.white;
 		}
 
-		state.piecesOnBoard = castPieceArray(pieces);
 		return state;
 	}
 	
@@ -607,12 +566,60 @@ abstract class FullPiece extends ReturnPiece {
 
 	//defined in subclass
 	abstract HashSet<Square> see();
+
+	//defined in subclass
+	abstract HashSet<Square> pawnCaptures();
+
+	//defined in subclass
+	protected abstract FullPiece clone();
 }
 
 class Pawn extends FullPiece {
 
 	Pawn(PieceType pieceType, PieceFile pieceFile, int pieceRank) {
 		super(pieceType, pieceFile, pieceRank);
+	}
+
+	public FullPiece clone(){
+		Pawn copiedPawn = new Pawn(pieceType, pieceFile, pieceRank);
+		return copiedPawn;
+	}
+
+	public HashSet<Square> pawnCaptures(){
+		HashSet<Square> moves = new HashSet<Square>();
+		int intFile = FullPiece.fileToInt(pieceFile);
+		boolean leftFile = intFile == 1;
+		boolean rightFile = intFile == 8;
+		int x;
+		if (color == Chess.Player.white) {
+			x = 1;
+		}
+		else {
+			x = -1;
+		}
+		if (leftFile) {
+			int diagRank = pieceRank+(x*1);
+			FullPiece.PieceFile diagFile = FullPiece.intToFile(intFile+1);
+			Square diag = new Square(diagFile, diagRank);
+			moves.add(diag);
+		}
+		else if (rightFile) {
+			int diagRank = pieceRank+(x*1);
+			FullPiece.PieceFile diagFile = FullPiece.intToFile(intFile-1);
+			Square diag = new Square(diagFile, diagRank);
+			moves.add(diag);
+		}
+		else {
+			int diagRank1 = pieceRank+(x*1);
+			FullPiece.PieceFile diagFile1 = FullPiece.intToFile(intFile-1);
+			int diagRank2 = pieceRank+(x*1);
+			FullPiece.PieceFile diagFile2 = FullPiece.intToFile(intFile+1);
+			Square diag1 = new Square(diagFile1, diagRank1);
+			Square diag2 = new Square(diagFile2, diagRank2);
+			moves.add(diag1);
+			moves.add(diag2);
+		}
+		return moves;
 	}
 
 	//color -> Chess.currentPlayer, squares -> Chess.squares
@@ -704,6 +711,16 @@ class Rook extends FullPiece {
 		super(pieceType, pieceFile, pieceRank);		
 	}
 
+	public FullPiece clone(){
+		Rook copiedRook = new Rook(pieceType, pieceFile, pieceRank);
+		return copiedRook;
+	}
+
+	public HashSet<Square> pawnCaptures(){
+		HashSet<Square> intelligentDesign = new HashSet<Square>();
+		return intelligentDesign;
+	}
+
 	//idea here is to go, say, right from rook and then keep looking right until hit piece or edge of board
 	HashSet<Square> see() {
 		HashSet<Square> moves = new HashSet<Square>();
@@ -774,6 +791,16 @@ class Knight extends FullPiece {
 		super(pieceType, pieceFile, pieceRank);
 	}
 
+	public FullPiece clone(){
+		Knight copiedKnight = new Knight(pieceType, pieceFile, pieceRank);
+		return copiedKnight;
+	}
+
+	public HashSet<Square> pawnCaptures(){
+		HashSet<Square> intelligentDesign = new HashSet<Square>();
+		return intelligentDesign;
+	}
+
 	//knight has 8 possible moves. if either of those is outside of board (> 8 or < 1) then it's off board, not in if statement
 	//if it's not a opposite color piece or empty then it's not added
 	HashSet<Square> see() {
@@ -798,6 +825,16 @@ class Bishop extends FullPiece {
 
 	Bishop(PieceType pieceType, PieceFile pieceFile, int pieceRank) {
 		super(pieceType, pieceFile, pieceRank);
+	}
+
+	public FullPiece clone(){
+		Bishop copiedBishop = new Bishop(pieceType, pieceFile, pieceRank);
+		return copiedBishop;
+	}
+
+	public HashSet<Square> pawnCaptures(){
+		HashSet<Square> intelligentDesign = new HashSet<Square>();
+		return intelligentDesign;
 	}
 
 	//check comment above rook's 'see' function. same principle
@@ -868,6 +905,16 @@ class Queen extends FullPiece {
 
 	Queen(PieceType pieceType, PieceFile pieceFile, int pieceRank) {
 		super(pieceType, pieceFile, pieceRank);
+	}
+
+	public FullPiece clone(){
+		Queen copiedQueen = new Queen(pieceType, pieceFile, pieceRank);
+		return copiedQueen;
+	}
+
+	public HashSet<Square> pawnCaptures(){
+		HashSet<Square> intelligentDesign = new HashSet<Square>();
+		return intelligentDesign;
 	}
 
 	HashSet<Square> see() {
@@ -996,6 +1043,16 @@ class King extends FullPiece {
 	King(PieceType pieceType, PieceFile pieceFile, int pieceRank) {
 		super(pieceType, pieceFile, pieceRank);
 	}
+
+	public FullPiece clone(){
+		King copiedKing = new King(pieceType, pieceFile, pieceRank);
+		return copiedKing;
+	}
+
+	public HashSet<Square> pawnCaptures(){
+		HashSet<Square> intelligentDesign = new HashSet<Square>();
+		return intelligentDesign;
+	}
 	
 	HashSet<Square> see() {
 		HashSet<Square> moves = new HashSet<Square>();
@@ -1006,7 +1063,7 @@ class King extends FullPiece {
 			if (i[0] <= 8 && i[0] >= 1 && i[1] <= 8 && i[1] >= 1) {
 				Square move = new Square(FullPiece.intToFile(i[0]), i[1]);
 				FullPiece piece = Chess.squares.get(move);
-				if ((piece == null || piece.color != color) /*&& !Chess.isKingInCheck(move)*/) { 
+				if ((piece == null || piece.color != color)) { 
 					moves.add(move);
 				}
 			}
