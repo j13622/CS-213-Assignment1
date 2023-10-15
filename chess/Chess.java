@@ -120,7 +120,7 @@ public class Chess {
 		//enPassant
 		Square enPassantSqr = null;
 		ReturnPiece passantPawn = null;
-		if (FullPiece.enPassant != null && FullPiece.enPassantPossible && FullPiece.enPassant.pieceFile == secondFile && FullPiece.enPassant.pieceRank == secondRank) {
+		if (FullPiece.enPassant != null && FullPiece.enPassantPossible && FullPiece.enPassant.pieceFile == secondSquare.file && FullPiece.enPassant.pieceRank == secondSquare.rank) {
 			int x;
 			if (currentPlayer == Chess.Player.white) {
 				x = -1;
@@ -140,22 +140,22 @@ public class Chess {
 		ReturnPiece.PieceFile initialRookFile = null;
 		int castleRank = 0;
 		ReturnPiece.PieceFile finalRookFile = null;
-		if (firstPiece.pieceType == ReturnPiece.PieceType.WK && firstFile == ReturnPiece.PieceFile.e && secondFile == ReturnPiece.PieceFile.c) {
+		if (firstPiece.pieceType == ReturnPiece.PieceType.WK && firstPiece.pieceFile == ReturnPiece.PieceFile.e && secondSquare.file == ReturnPiece.PieceFile.c) {
 			initialRookFile = ReturnPiece.PieceFile.a;
 			castleRank = 1;
 			finalRookFile = ReturnPiece.PieceFile.d;
 		}
-		if (firstPiece.pieceType == ReturnPiece.PieceType.WK && firstFile == ReturnPiece.PieceFile.e && secondFile == ReturnPiece.PieceFile.g) {
+		if (firstPiece.pieceType == ReturnPiece.PieceType.WK && firstPiece.pieceFile == ReturnPiece.PieceFile.e && secondSquare.file == ReturnPiece.PieceFile.g) {
 			initialRookFile = ReturnPiece.PieceFile.h;
 			castleRank = 1;
 			finalRookFile = ReturnPiece.PieceFile.f;
 		}
-		if (firstPiece.pieceType == ReturnPiece.PieceType.BK && firstFile == ReturnPiece.PieceFile.e && secondFile == ReturnPiece.PieceFile.c) {
+		if (firstPiece.pieceType == ReturnPiece.PieceType.BK && firstPiece.pieceFile == ReturnPiece.PieceFile.e && secondSquare.file == ReturnPiece.PieceFile.c) {
 			initialRookFile = ReturnPiece.PieceFile.a;
 			castleRank = 8;
 			finalRookFile = ReturnPiece.PieceFile.d;
 		}
-		if (firstPiece.pieceType == ReturnPiece.PieceType.BK && firstFile == ReturnPiece.PieceFile.e && secondFile == ReturnPiece.PieceFile.g) {
+		if (firstPiece.pieceType == ReturnPiece.PieceType.BK && firstPiece.pieceFile == ReturnPiece.PieceFile.e && secondSquare.file == ReturnPiece.PieceFile.g) {
 			initialRookFile = ReturnPiece.PieceFile.h;
 			castleRank = 8;
 			finalRookFile = ReturnPiece.PieceFile.f;
@@ -196,9 +196,9 @@ public class Chess {
 		}
 		//undoes castle
 		if (undoData[2][0] != null) {
-			Square firstRookSquare = undoData[2][0];
-			FullPiece rook = undoData[2][1];
-			Square finalRookSquare = undoData[2][2];
+			Square firstRookSquare = (Square) undoData[2][0];
+			FullPiece rook = (FullPiece) undoData[2][1];
+			Square finalRookSquare = (Square) undoData[2][2];
 			squares.put(firstRookSquare, rook);
 			squares.remove(finalRookSquare);
 			rook.pieceFile = firstRookSquare.file;
