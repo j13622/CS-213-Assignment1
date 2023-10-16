@@ -109,6 +109,9 @@ public class Chess {
         for (FullPiece opponentPiece : pieces){
             if (opponentPiece.color == opponent){
                 HashSet<Square> currentOpponentPieceSees = new HashSet<Square>();
+				if (opponentPiece.pieceType == ReturnPiece.PieceType.WP || opponentPiece.pieceType == ReturnPiece.PieceType.BP){
+					FullPiece.enPassantPossible = false;
+				}
 				currentOpponentPieceSees = opponentPiece.see();
                 for (Square move : currentOpponentPieceSees){
                     ArrayList<Object> legalMove = new ArrayList<Object>();
@@ -118,19 +121,27 @@ public class Chess {
                 }
             }
         }
+		System.out.println(allLegalMoves);
         //for all legal moves, call the move function, determine if legal, undo move; if king is moved, check that square instead
         for (ArrayList<Object> move : allLegalMoves){
+			System.out.println(move);
+			if (move.get(0) == ReturnPiece.PieceType.WP || move.get(0) == ReturnPiece.PieceType.BP){
+				FullPiece.enPassantPossible = false;
+			}
             Object[][] undoData = moveFctn((FullPiece)move.get(0), (Square)move.get(1));
 			ReturnPiece piece = (ReturnPiece)move.get(0);
+			System.out.println(piece);
 			if (piece.pieceType == ReturnPiece.PieceType.WK || piece.pieceType == ReturnPiece.PieceType.BK){
 				Square newOpponentKingSquare = (Square)move.get(1);
+				System.out.println(isKingInCheck(newOpponentKingSquare, opponent));
 				if (!isKingInCheck(newOpponentKingSquare, opponent)){
-                legalMoveOutOfCheck = true;
+                	legalMoveOutOfCheck = true;
 				} 
 			} else {
+				System.out.println(isKingInCheck(opponentKingSquare, opponent));
 				if (!isKingInCheck(opponentKingSquare, opponent)){
-                legalMoveOutOfCheck = true;
-            }
+                	legalMoveOutOfCheck = true;
+            	}
 			}
             undoMove((FullPiece)move.get(0), (Square)move.get(1), undoData);
         }
@@ -245,25 +256,6 @@ public class Chess {
 		}
 	}
 
-	// public static HashMap<Square, FullPiece> deepCopySquares(HashMap<Square, FullPiece> ogSquares) {
-    //  HashMap<Square, FullPiece> copyOfSquares = new HashMap<>();
-    //  for (Map.Entry<Square, FullPiece> entry : ogSquares.entrySet()) {
-    //      Square square = entry.getKey();
-    //      FullPiece piece = entry.getValue().clone();
-    //      copyOfSquares.put(square, piece);
-    //  }
-    //  return copyOfSquares;
-    // }
-
-
-    // public static ArrayList<FullPiece> deepCopyPieces(ArrayList<FullPiece> ogPieces) {
-    //  ArrayList<FullPiece> copyOfPieces = new ArrayList<>();
-    //  for (FullPiece piece : ogPieces) {
-    //      copyOfPieces.add(piece.clone());
-    //  }
-    //  return copyOfPieces;
-    // }
-
 	/**
 	 * Plays the next move for whichever player has the turn.
 	 * 
@@ -301,6 +293,16 @@ public class Chess {
 		
 		if (firstPiece == null || currentPlayer != firstPiece.color) {
 			System.out.println("first illegal - must move own piece");
+			state.message = ReturnPlay.Message.ILLEGAL_MOVE;
+			return state;
+		}
+
+		//can't castle when king is in check
+		System.out.println(checkLastMove);
+		System.out.println(ret.substring(0,5));
+		if (checkLastMove && (ret.substring(0,5).equals("e1 g1") || ret.substring(0,5).equals("e1 c1") || 
+		ret.substring(0,5).equals("e8 g8") || ret.substring(0,5).equals("e8 g8"))){
+			System.out.println("illegal - can't castle while king is in check");
 			state.message = ReturnPlay.Message.ILLEGAL_MOVE;
 			return state;
 		}
