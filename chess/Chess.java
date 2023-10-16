@@ -268,26 +268,44 @@ public class Chess {
 	public static ReturnPlay play(String move) {
 
 		state.message = null;
+		boolean draw = false;
 
-		int first = 0;
-        String ret;
+		String[] tempArray = move.split(" ");
+		int count = 0;
+		for (int i = 0; i < tempArray.length; i++) {
+			tempArray[i] = tempArray[i].replaceAll(" ", "");
+			if (!tempArray[i].equals("")) {
+				count++;
+			}
+		}
+		String[] ret = new String[count];
+		count = 0;
+		for (int i = 0; i < tempArray.length; i++) {
+			if (!tempArray.equals("")) {
+				ret[count] = tempArray[i];
+				count++;
+			}
+		}
 
-        for(int i = 0; i < move.length(); i++) {
-            if (move.charAt(i) != ' ') {
-                first = i;
-                break;
-            }
-        }
+		if (ret.length == 1 && ret[0].equals("resign")) {
+			if (currentPlayer == Player.white) {
+				state.message = ReturnPlay.Message.RESIGN_BLACK_WINS;
+			}
+			else {
+				state.message = ReturnPlay.Message.RESIGN_WHITE_WINS;
+			}
+			return state;
+		}
 
-        if (move.length() >= first + 7 && move.charAt(first+6) != ' ') {
-            ret = move.substring(first, first+7);
-        } else {
-            ret = move.substring(first, first+5);
-        }
-		int moveSubstringLength = ret.length();
+		for (int i = 0; i < ret.length; i++) {
+			if (ret[i].equals("draw?")) {
+				draw = true;
+				state.message = ReturnPlay.Message.DRAW;
+			}
+		}
 
-		ReturnPiece.PieceFile firstFile = ReturnPiece.PieceFile.valueOf("" + ret.charAt(0));
-		int firstRank = ret.charAt(1) - '0';
+		ReturnPiece.PieceFile firstFile = ReturnPiece.PieceFile.valueOf("" + ret[0].charAt(0));
+		int firstRank = ret[0].charAt(1) - '0';
 		Square firstSquare = new Square(firstFile, firstRank);
 		FullPiece firstPiece = squares.get(firstSquare);
 		
@@ -307,8 +325,8 @@ public class Chess {
 			return state;
 		}
 
-		ReturnPiece.PieceFile secondFile = ReturnPiece.PieceFile.valueOf("" + ret.charAt(3));
-		int secondRank = ret.charAt(4) - '0';
+		ReturnPiece.PieceFile secondFile = ReturnPiece.PieceFile.valueOf("" + ret[1].charAt(0));
+		int secondRank = ret[1].charAt(0) - '0';
 		Square secondSquare = new Square(secondFile, secondRank);
 		FullPiece.enPassantPossible = false;
 		HashSet<Square> possibleMoves = firstPiece.see();
@@ -415,6 +433,10 @@ public class Chess {
 		checkLastMove = false;
 		state.piecesOnBoard = castPieceArray(pieces);
 
+		if (draw) {
+			return state;
+		}
+
 		//did current player put the opponent in check, and if so, is it mate
 		Player opponent = opponentColor();
 		Square opponentKingSquare = getKingSquare(opponent);
@@ -432,7 +454,7 @@ public class Chess {
 			state.message = ReturnPlay.Message.CHECK;
 		}
 
-		if (currentPlayer == Chess.Player.white) {
+		if (currentPlayer == Player.white) {
 			currentPlayer = Player.black;
 		} else {
 			currentPlayer = Player.white;
