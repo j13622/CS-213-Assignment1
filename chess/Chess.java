@@ -113,6 +113,9 @@ public class Chess {
 					FullPiece.enPassantPossible = false;
 				}
 				currentOpponentPieceSees = opponentPiece.see();
+				if (opponentPiece.pieceType == ReturnPiece.PieceType.WP || opponentPiece.pieceType == ReturnPiece.PieceType.BP){
+
+				}
                 for (Square move : currentOpponentPieceSees){
                     ArrayList<Object> legalMove = new ArrayList<Object>();
                     legalMove.add(opponentPiece);
@@ -316,22 +319,19 @@ public class Chess {
 		}
 
 		//can't castle when king is in check
-		System.out.println(checkLastMove);
-		System.out.println(ret.substring(0,5));
-		if (checkLastMove && (ret.substring(0,5).equals("e1 g1") || ret.substring(0,5).equals("e1 c1") || 
-		ret.substring(0,5).equals("e8 g8") || ret.substring(0,5).equals("e8 g8"))){
+		if (checkLastMove && ((ret[0].equals("e1") && ret[1].equals("g1")) || (ret[0].equals("e1") && ret[1].equals("c1")) || 
+		(ret[0].equals("e8") && ret[1].equals("g8")) || (ret[0].equals("e8") && ret[1].equals("c8")))){
 			System.out.println("illegal - can't castle while king is in check");
 			state.message = ReturnPlay.Message.ILLEGAL_MOVE;
 			return state;
 		}
 
 		ReturnPiece.PieceFile secondFile = ReturnPiece.PieceFile.valueOf("" + ret[1].charAt(0));
-		int secondRank = ret[1].charAt(0) - '0';
+		int secondRank = ret[1].charAt(1) - '0';
 		Square secondSquare = new Square(secondFile, secondRank);
 		FullPiece.enPassantPossible = false;
 		HashSet<Square> possibleMoves = firstPiece.see();
 
-		System.out.println(possibleMoves);
 		Object[][] priorStatus = null;
 		if (possibleMoves.contains(secondSquare)) {
 			priorStatus = moveFctn(firstPiece, secondSquare);
@@ -385,46 +385,52 @@ public class Chess {
 		}
 
 		FullPiece promPiece = null;
+		int retLength = ret.length;
 		//2 if statements below handle promotion
-			if (secondRank == 8 && firstPiece.pieceType == ReturnPiece.PieceType.WP){
-				pieces.remove(firstPiece);
-				squares.remove(firstSquare);
-				squares.remove(secondSquare);
-				switch(ret.charAt(moveSubstringLength-1)){
-					case 'N':
+		if (secondRank == 8 && firstPiece.pieceType == ReturnPiece.PieceType.WP){
+			pieces.remove(firstPiece);
+			squares.remove(firstSquare);
+			squares.remove(secondSquare);
+			if (retLength == 3 || retLength == 4){
+				if (!ret[2].equals("draw?")){
+					if (ret[2].equals("N")){
 						promPiece = new Knight(ReturnPiece.PieceType.WN, secondFile, secondRank);
-						break;
-					case 'B':
+					}
+					else if (ret[2].equals("B")){
 						promPiece = new Bishop(ReturnPiece.PieceType.WB, secondFile, secondRank);
-						break;
-					case 'R':
+					}
+					else if (ret[2].equals("R")){
 						promPiece = new Rook(ReturnPiece.PieceType.WR, secondFile, secondRank);
-						break;
-					default:
+					}
+					else {
 						promPiece = new Queen(ReturnPiece.PieceType.WQ, secondFile, secondRank);
+					}
 				}
-				promotedThisMove = true;
 			}
-			if (secondRank == 1 && firstPiece.pieceType == ReturnPiece.PieceType.BP){
-				pieces.remove(firstPiece);
-				squares.remove(firstSquare);
-				squares.remove(secondSquare);
-				switch(ret.charAt(moveSubstringLength-1)){
-					case 'N':
+			promotedThisMove = true;
+		}
+		if (secondRank == 1 && firstPiece.pieceType == ReturnPiece.PieceType.BP){
+			pieces.remove(firstPiece);
+			squares.remove(firstSquare);
+			squares.remove(secondSquare);
+			if (retLength == 3 || retLength == 4){
+				if (!ret[2].equals("draw?")){
+					if (ret[2].equals("N")){
 						promPiece = new Knight(ReturnPiece.PieceType.BN, secondFile, secondRank);
-						break;
-					case 'B':
+					}
+					else if (ret[2].equals("B")){
 						promPiece = new Bishop(ReturnPiece.PieceType.BB, secondFile, secondRank);
-						break;
-					case 'R':
+					}
+					else if (ret[2].equals("R")){
 						promPiece = new Rook(ReturnPiece.PieceType.BR, secondFile, secondRank);
-						break;
-					default:
+					}
+					else {
 						promPiece = new Queen(ReturnPiece.PieceType.BQ, secondFile, secondRank);
+					}
 				}
-				promotedThisMove = true;
 			}
-
+			promotedThisMove = true;
+		}
 		if (promPiece != null) {
 			squares.put(new Square(secondFile, secondRank), promPiece);
 			pieces.add(promPiece);
