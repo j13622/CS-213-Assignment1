@@ -50,12 +50,7 @@ public class Chess {
 
 	static boolean checkLastMove;
 	static boolean promotedThisMove;
-	static boolean enPassantThisMove;
-	static boolean WCLThisMove;
-	static boolean BCLThisMove;
-	static boolean WCSThisMove;
-	static boolean BCSThisMove;
-
+	
 	public static ArrayList<ReturnPiece> castPieceArray(ArrayList<FullPiece> fullPieces) {
 		ArrayList<ReturnPiece> returnPieces = new ArrayList<ReturnPiece>();
 		for(FullPiece i : fullPieces) {
@@ -69,32 +64,26 @@ public class Chess {
 		return opponent;
 	}
 
-	public static Square getKingSquare(Player player){
-		Square kingSquare = null;
+	public static FullPiece getKing(Player player){
+		FullPiece kng;
 		for (FullPiece potentiallyKing : pieces){
-				if (player == Chess.Player.white){
-					if (potentiallyKing.pieceType == ReturnPiece.PieceType.WK){
-						kingSquare = new Square(potentiallyKing.pieceFile, potentiallyKing.pieceRank);
-					}
-				} else {
-					if (potentiallyKing.pieceType == ReturnPiece.PieceType.BK){
-						kingSquare = new Square(potentiallyKing.pieceFile, potentiallyKing.pieceRank);
-					}
-				}
+			if (player == Chess.Player.white && potentiallyKing.pieceType == ReturnPiece.PieceType.WK) {
+				return potentiallyKing;
 			}
-		return kingSquare;
+			else if (player == Chess.Player.black && potentiallyKing.pieceType == ReturnPiece.PieceType.BK) {
+				return potentiallyKing;
+			}
+		}
+		return null;
 	}
 
-	public static boolean isKingInCheck(Square kingSquare, Player player){
+	public static boolean isKingInCheck(FullPiece kingPiece, Player player){
+		Square kingSquare = new Square(kingPiece.pieceFile, kingPiece.pieceRank);
 		HashSet<Square> allSquaresSeen = new HashSet<Square>();
 		for (FullPiece opponentPiece : pieces){
 			if (opponentPiece.color != player){
 				HashSet<Square> currentOpponentPieceSees = new HashSet<Square>();
-				if (opponentPiece.pieceType == ReturnPiece.PieceType.WP || opponentPiece.pieceType == ReturnPiece.PieceType.BP){
-					currentOpponentPieceSees = opponentPiece.pawnCaptures();
-				} else {
-					currentOpponentPieceSees = opponentPiece.see();
-				}
+				currentOpponentPieceSees = opponentPiece.see();
 				allSquaresSeen.addAll(currentOpponentPieceSees);
 			}
 		}
@@ -102,16 +91,13 @@ public class Chess {
 		return false;
 	}
 
-	public static boolean checkmate(Square opponentKingSquare, Player opponent){
+	public static boolean checkmate(FullPiece opponentKing, Player opponent){
         //create an arraylist of arraylists, where each row is a legal move, and the entries in each row hold args to be fed into move function
         boolean legalMoveOutOfCheck = false;
 		ArrayList<ArrayList<Object>> allLegalMoves = new ArrayList<ArrayList<Object>>();
         for (FullPiece opponentPiece : pieces){
             if (opponentPiece.color == opponent){
                 HashSet<Square> currentOpponentPieceSees = new HashSet<Square>();
-				if (opponentPiece.pieceType == ReturnPiece.PieceType.WP || opponentPiece.pieceType == ReturnPiece.PieceType.BP){
-					FullPiece.enPassantPossible = false;
-				}
 				currentOpponentPieceSees = opponentPiece.see();
                 for (Square move : currentOpponentPieceSees){
                     ArrayList<Object> legalMove = new ArrayList<Object>();
@@ -124,24 +110,13 @@ public class Chess {
 		System.out.println(allLegalMoves);
         //for all legal moves, call the move function, determine if legal, undo move; if king is moved, check that square instead
         for (ArrayList<Object> move : allLegalMoves){
-			System.out.println(move);
-			if (move.get(0) == ReturnPiece.PieceType.WP || move.get(0) == ReturnPiece.PieceType.BP){
-				FullPiece.enPassantPossible = false;
-			}
+			// System.out.println(move);
             Object[][] undoData = moveFctn((FullPiece)move.get(0), (Square)move.get(1));
-			ReturnPiece piece = (ReturnPiece)move.get(0);
-			System.out.println(piece);
-			if (piece.pieceType == ReturnPiece.PieceType.WK || piece.pieceType == ReturnPiece.PieceType.BK){
-				Square newOpponentKingSquare = (Square)move.get(1);
-				System.out.println(isKingInCheck(newOpponentKingSquare, opponent));
-				if (!isKingInCheck(newOpponentKingSquare, opponent)){
-                	legalMoveOutOfCheck = true;
-				} 
-			} else {
-				System.out.println(isKingInCheck(opponentKingSquare, opponent));
-				if (!isKingInCheck(opponentKingSquare, opponent)){
-                	legalMoveOutOfCheck = true;
-            	}
+			FullPiece piece = (FullPiece)move.get(0);
+			piece.enPassantPossible = false;
+			// System.out.println(piece);
+			if (!isKingInCheck(opponentKing, opponent)) {
+				return true;
 			}
             undoMove((FullPiece)move.get(0), (Square)move.get(1), undoData);
         }
@@ -207,7 +182,7 @@ public class Chess {
 		//enPassant
 		Square enPassantSqr = null;
 		ReturnPiece passantPawn = null;
-		if (FullPiece.enPassant != null && FullPiece.enPassantPossible && FullPiece.enPassant.pieceFile == secondSquare.file && FullPiece.enPassant.pieceRank == secondSquare.rank) {
+		if (FullPiece.enPassant != null && firstPiece.enPassantPossible && FullPiece.enPassant.pieceFile == secondSquare.file && FullPiece.enPassant.pieceRank == secondSquare.rank) {
 			int x;
 			if (currentPlayer == Chess.Player.white) {
 				x = -1;
@@ -326,7 +301,6 @@ public class Chess {
 		ReturnPiece.PieceFile secondFile = ReturnPiece.PieceFile.valueOf("" + ret[1].charAt(0));
 		int secondRank = ret[1].charAt(1) - '0';
 		Square secondSquare = new Square(secondFile, secondRank);
-		FullPiece.enPassantPossible = false;
 		HashSet<Square> possibleMoves = firstPiece.see();
 
 		Object[][] priorStatus = null;
@@ -338,9 +312,11 @@ public class Chess {
 			return state;
 		}
 
+		firstPiece.enPassantPossible = false;
+
 		// did current player put self in check
-		Square currentPlayerKingSquare = getKingSquare(currentPlayer);
-		if (isKingInCheck(currentPlayerKingSquare, currentPlayer)){
+		FullPiece currentKing = getKing(currentPlayer);
+		if (isKingInCheck(currentKing, currentPlayer)){
 			undoMove(firstPiece, secondSquare, priorStatus);
 			System.out.println("illegal - must get out of previous check / can't put self in check / king kiss");
 			state.message = ReturnPlay.Message.ILLEGAL_MOVE;
@@ -369,7 +345,6 @@ public class Chess {
 			FullPiece.blackCastleShort = false;
 		}
 
-		FullPiece.enPassantPossible = false;
 		//en passant
 		if (firstPiece.pieceType == ReturnPiece.PieceType.WP && (firstRank + 2 == secondRank)) {
 			FullPiece.enPassant = new Pawn(ReturnPiece.PieceType.WP, firstFile, 3);
@@ -442,9 +417,9 @@ public class Chess {
 
 		//did current player put the opponent in check, and if so, is it mate
 		Player opponent = opponentColor();
-		Square opponentKingSquare = getKingSquare(opponent);
-		if (isKingInCheck(opponentKingSquare, opponent)){
-			if (checkmate(opponentKingSquare, opponent)){
+		FullPiece oppKing = getKing(opponent);
+		if (isKingInCheck(oppKing, opponent)){
+			if (checkmate(oppKing, opponent)){
 				if (opponent == Chess.Player.white){
 					state.message = ReturnPlay.Message.CHECKMATE_BLACK_WINS;
 				} else {
@@ -580,9 +555,9 @@ public class Chess {
 }
 
 abstract class FullPiece extends ReturnPiece {
+	boolean enPassantPossible = false;
 	Chess.Player color;
 	static FullPiece enPassant;
-	static boolean enPassantPossible;
 	static boolean whiteCastleShort;
 	static boolean whiteCastleLong;
 	static boolean blackCastleShort;
@@ -619,7 +594,6 @@ abstract class FullPiece extends ReturnPiece {
 			}
 		}
 		enPassant = null;
-		enPassantPossible = false;
 	}
 
 	//constructor
