@@ -78,7 +78,6 @@ public class Chess {
 	}
 
 	public static boolean isKingInCheck(FullPiece kingPiece, Player player){
-		System.out.println("Pre- is check: " + pieces);
 		Square kingSquare = new Square(kingPiece.pieceFile, kingPiece.pieceRank);
 		HashSet<Square> allSquaresSeen = new HashSet<Square>();
 		for (FullPiece opponentPiece : pieces){
@@ -90,12 +89,10 @@ public class Chess {
 			}
 		}
 		if (allSquaresSeen.contains(kingSquare)){return true;}
-		System.out.println("Post- is check: " + pieces);
 		return false;
 	}
 
 	public static boolean checkmate(FullPiece opponentKing, Player opponent){
-		System.out.println("Pre- mate: " + pieces);
         //create an arraylist of arraylists, where each row is a legal move, and the entries in each row hold args to be fed into move function
 		ArrayList<ArrayList<Object>> allLegalMoves = new ArrayList<ArrayList<Object>>();
         for (FullPiece opponentPiece : pieces){
@@ -112,13 +109,11 @@ public class Chess {
         }
         //for all legal moves, call the move function, determine if legal, undo move; if king is moved, check that square instead
         for (ArrayList<Object> move : allLegalMoves){
-			// System.out.println(move);
             Object[][] undoData = moveFctn((FullPiece)move.get(0), (Square)move.get(1));
 			FullPiece piece = (FullPiece)move.get(0);
 			piece.enPassantPossible = false;
-			// System.out.println(piece);
 			if (!isKingInCheck(opponentKing, opponent)) {
-				System.out.println("Post- mate: " + pieces);
+				undoMove((FullPiece)move.get(0), (Square)move.get(1), undoData);
 				return false;
 			}
             undoMove((FullPiece)move.get(0), (Square)move.get(1), undoData);
@@ -417,9 +412,7 @@ public class Chess {
 
 		//did current player put the opponent in check, and if so, is it mate
 		Player opponent = opponentColor();
-		System.out.println("Pre-getKing: " + pieces);
 		FullPiece oppKing = getKing(opponent);
-		System.out.println("Post-getKing: " + pieces);
 		if (isKingInCheck(oppKing, opponent)){
 			if (checkmate(oppKing, opponent)){
 				if (opponent == Chess.Player.white){
