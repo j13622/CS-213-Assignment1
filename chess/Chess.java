@@ -78,22 +78,25 @@ public class Chess {
 	}
 
 	public static boolean isKingInCheck(FullPiece kingPiece, Player player){
+		System.out.println("Pre- is check: " + pieces);
 		Square kingSquare = new Square(kingPiece.pieceFile, kingPiece.pieceRank);
 		HashSet<Square> allSquaresSeen = new HashSet<Square>();
 		for (FullPiece opponentPiece : pieces){
 			if (opponentPiece.color != player){
 				HashSet<Square> currentOpponentPieceSees = new HashSet<Square>();
 				currentOpponentPieceSees = opponentPiece.see();
+				opponentPiece.enPassantPossible = false;
 				allSquaresSeen.addAll(currentOpponentPieceSees);
 			}
 		}
 		if (allSquaresSeen.contains(kingSquare)){return true;}
+		System.out.println("Post- is check: " + pieces);
 		return false;
 	}
 
 	public static boolean checkmate(FullPiece opponentKing, Player opponent){
+		System.out.println("Pre- mate: " + pieces);
         //create an arraylist of arraylists, where each row is a legal move, and the entries in each row hold args to be fed into move function
-        boolean legalMoveOutOfCheck = false;
 		ArrayList<ArrayList<Object>> allLegalMoves = new ArrayList<ArrayList<Object>>();
         for (FullPiece opponentPiece : pieces){
             if (opponentPiece.color == opponent){
@@ -107,7 +110,6 @@ public class Chess {
                 }
             }
         }
-		System.out.println(allLegalMoves);
         //for all legal moves, call the move function, determine if legal, undo move; if king is moved, check that square instead
         for (ArrayList<Object> move : allLegalMoves){
 			// System.out.println(move);
@@ -116,13 +118,11 @@ public class Chess {
 			piece.enPassantPossible = false;
 			// System.out.println(piece);
 			if (!isKingInCheck(opponentKing, opponent)) {
-				return true;
+				System.out.println("Post- mate: " + pieces);
+				return false;
 			}
             undoMove((FullPiece)move.get(0), (Square)move.get(1), undoData);
         }
-        if (legalMoveOutOfCheck){
-			return false;
-		}
 		return true;
     }
 
@@ -417,7 +417,9 @@ public class Chess {
 
 		//did current player put the opponent in check, and if so, is it mate
 		Player opponent = opponentColor();
+		System.out.println("Pre-getKing: " + pieces);
 		FullPiece oppKing = getKing(opponent);
+		System.out.println("Post-getKing: " + pieces);
 		if (isKingInCheck(oppKing, opponent)){
 			if (checkmate(oppKing, opponent)){
 				if (opponent == Chess.Player.white){
