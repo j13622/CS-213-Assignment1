@@ -280,7 +280,6 @@ public class Chess {
 		FullPiece firstPiece = squares.get(firstSquare);
 		
 		if (firstPiece == null || currentPlayer != firstPiece.color) {
-			System.out.println("first illegal - must move own piece");
 			state.message = ReturnPlay.Message.ILLEGAL_MOVE;
 			return state;
 		}
@@ -288,7 +287,6 @@ public class Chess {
 		//can't castle when king is in check
 		if (checkLastMove && ((ret[0].equals("e1") && ret[1].equals("g1")) || (ret[0].equals("e1") && ret[1].equals("c1")) || 
 		(ret[0].equals("e8") && ret[1].equals("g8")) || (ret[0].equals("e8") && ret[1].equals("c8")))){
-			System.out.println("illegal - can't castle while king is in check");
 			state.message = ReturnPlay.Message.ILLEGAL_MOVE;
 			return state;
 		}
@@ -302,7 +300,6 @@ public class Chess {
 		if (possibleMoves.contains(secondSquare)) {
 			priorStatus = moveFctn(firstPiece, secondSquare);
 		} else {
-			System.out.println("second illegal - not in set of legal moves");
 			state.message = ReturnPlay.Message.ILLEGAL_MOVE;
 			return state;
 		}
@@ -313,7 +310,6 @@ public class Chess {
 		FullPiece currentKing = getKing(currentPlayer);
 		if (isKingInCheck(currentKing, currentPlayer)){
 			undoMove(firstPiece, secondSquare, priorStatus);
-			System.out.println("illegal - must get out of previous check / can't put self in check / king kiss");
 			state.message = ReturnPlay.Message.ILLEGAL_MOVE;
 			return state;
 		}
