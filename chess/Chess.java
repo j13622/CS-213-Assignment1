@@ -113,9 +113,6 @@ public class Chess {
 					FullPiece.enPassantPossible = false;
 				}
 				currentOpponentPieceSees = opponentPiece.see();
-				if (opponentPiece.pieceType == ReturnPiece.PieceType.WP || opponentPiece.pieceType == ReturnPiece.PieceType.BP){
-
-				}
                 for (Square move : currentOpponentPieceSees){
                     ArrayList<Object> legalMove = new ArrayList<Object>();
                     legalMove.add(opponentPiece);
