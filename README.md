@@ -1,4 +1,4 @@
-This project is Chess, for Software Methodology class (CS 213 at Rutgers). It runs in the shell. You can run the program using "java chess/PlayChess". The actual back-end is in chess/Chess.java
+This project is Chess, for Software Methodology class (CS 213 at Rutgers). It runs in the shell. You can run the program using "java chess/PlayChess". The actual back-end is in chess/Chess.java. This project fully implements STALEMATE, CHECKMATE, CHECK, ILLEGAL MOVES, EN PASSANT, DRAWS, and RESIGNATIONS.
 
 Here is a sample run of PlayChess:
 
